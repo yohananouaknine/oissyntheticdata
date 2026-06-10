@@ -27,7 +27,7 @@ abstract: >-
   synthesis that preserves referential integrity. It is designed for the
   develop-on-synthetic, run-on-real workflow used in secure research environments,
   where the synthetic data supports off-site development and the final analysis is
-  run on the confidential data on-premises. Maintained by OIS.
+  run on the confidential data on-premises. Maintained by Dr Yohanan Ouaknine.
 references:
   - type: article
     title: "synthpop: Bespoke Creation of Synthetic Data in R"
