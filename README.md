@@ -236,8 +236,7 @@ and parent → child → grandchild chains.
 Dr **Yohanan Ouaknine** — OIS ([ois.co.il](https://ois.co.il)),
 [yohanan.ouaknine@ois.co.il](mailto:yohanan.ouaknine@ois.co.il),
 [ORCID 0000-0002-4186-7351](https://orcid.org/0000-0002-4186-7351).
-Department of Criminology, Ashkelon Academic College; formerly Head of the
-Research Branch, Israel Prison Service.
+formerly Head of the Research Branch, Israel Prison Service.
 
 ## License
 
@@ -245,8 +244,4 @@ MIT — see `LICENSE`.
 
 ## Citation
 
-If you use `oissyntheticdata`, please cite this software (see `CITATION.cff`) and
-the methodological lineage above (Reiter 2005; Nowok, Raab & Dibben 2016). The
-method was first applied in Ouaknine, Elisha & Hasisi (2026), *The Effect of Mass
-Prisoner Release on Terrorist Recidivism: A Propensity Score Analysis of the Shalit
-Deal* (in publication).
+If you use `oissyntheticdata`, please cite this software (see `CITATION.cff`)  
