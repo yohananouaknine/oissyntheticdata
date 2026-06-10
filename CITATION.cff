@@ -1,0 +1,72 @@
+cff-version: 1.2.0
+title: "oissyntheticdata: zero-dependency sequential CART synthesis for secure research"
+message: "If you use this software, please cite it using the metadata below."
+type: software
+authors:
+  - given-names: Yohanan
+    family-names: Ouaknine
+    orcid: "https://orcid.org/0000-0002-4186-7351"
+    email: "yohanan.ouaknine@ois.co.il"
+    affiliation: "OIS (https://ois.co.il); Department of Criminology, Ashkelon Academic College"
+version: "0.2.0"
+date-released: "2026-06-10"
+license: MIT
+repository-code: "https://github.com/yohananouaknine/oissyntheticdata"
+url: "https://ois.co.il"
+keywords:
+  - synthetic data
+  - synthpop
+  - statistical disclosure control
+  - CART
+  - privacy
+  - secure research
+  - microdata
+abstract: >-
+  oissyntheticdata is a zero-dependency, pure-Python implementation of sequential
+  CART synthesis in the synthpop tradition, including relational (multi-table)
+  synthesis that preserves referential integrity. It is designed for the
+  develop-on-synthetic, run-on-real workflow used in secure research environments,
+  where the synthetic data supports off-site development and the final analysis is
+  run on the confidential data on-premises. Maintained by OIS.
+references:
+  - type: article
+    title: "synthpop: Bespoke Creation of Synthetic Data in R"
+    authors:
+      - given-names: Beata
+        family-names: Nowok
+      - given-names: "Gillian M."
+        family-names: Raab
+      - given-names: Chris
+        family-names: Dibben
+    journal: "Journal of Statistical Software"
+    year: 2016
+    volume: 74
+    issue: 11
+    doi: 10.18637/jss.v074.i11
+  - type: article
+    title: "Using CART to generate partially synthetic public use microdata"
+    authors:
+      - given-names: "Jerome P."
+        family-names: Reiter
+    journal: "Journal of Official Statistics"
+    year: 2005
+    volume: 21
+    issue: 3
+    start: 441
+    end: 462
+  - type: article
+    title: "Verification servers: enabling analysts to assess the quality of inferences from public use data"
+    authors:
+      - given-names: "Jerome P."
+        family-names: Reiter
+      - given-names: Anna
+        family-names: Oganian
+      - given-names: "Alan F."
+        family-names: Karr
+    journal: "Computational Statistics & Data Analysis"
+    year: 2009
+    volume: 53
+    issue: 4
+    start: 1475
+    end: 1482
+    doi: 10.1016/j.csda.2008.10.006
