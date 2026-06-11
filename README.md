@@ -251,7 +251,4 @@ MIT — see `LICENSE`.
 
 If you use `oissyntheticdata`, please cite this software (see `CITATION.cff`;
 archived on Zenodo, concept DOI [10.5281/zenodo.20632932](https://doi.org/10.5281/zenodo.20632932) — always resolves to the latest version)
-and the methodological lineage above (Reiter 2005; Nowok, Raab & Dibben 2016). The
-method was first applied in Ouaknine, Elisha & Hasisi (2026), *The Effect of Mass
-Prisoner Release on Terrorist Recidivism: A Propensity Score Analysis of the Shalit
-Deal* (in press).
+ 
