@@ -151,7 +151,7 @@ parent attribute, and a parent-to-child relationship is preserved.
 # Development, governance, and contributions
 
 `oissyntheticdata` is developed in the open under the MIT license, with versioned
-releases archived on Zenodo (DOI: 10.5281/zenodo.20632933), a changelog, a citation
+releases archived on Zenodo (concept DOI: 10.5281/zenodo.20632932, resolving to the latest version), a changelog, a citation
 file, public issue tracking, and a contributing guide. Maintenance and decision
 responsibilities are stated in the repository, and the design rationale lives in the
 user-facing documentation.

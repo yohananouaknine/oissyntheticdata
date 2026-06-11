@@ -5,7 +5,7 @@
 > An **OIS** tool · [ois.co.il](https://ois.co.il) · maintained by Dr Yohanan Ouaknine
 > ([ORCID 0000-0002-4186-7351](https://orcid.org/0000-0002-4186-7351))
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20632933.svg)](https://doi.org/10.5281/zenodo.20632933)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20632932.svg)](https://doi.org/10.5281/zenodo.20632932)
 
 `oissyntheticdata` generates a synthetic copy of a sensitive dataset that preserves the
 *relationships between variables*, not just each column's marginal shape. It is
@@ -139,7 +139,7 @@ asked to disclose non-trivial AI assistance (see `CONTRIBUTING.md`).
 ## Install
 
 ```bash
-pip install oissyntheticdata          # once published
+pip install oissyntheticdata
 # or, in a locked environment, just copy the oissyntheticdata/ folder next to your code
 ```
 
@@ -250,7 +250,7 @@ MIT — see `LICENSE`.
 ## Citation
 
 If you use `oissyntheticdata`, please cite this software (see `CITATION.cff`;
-archived at [doi:10.5281/zenodo.20632933](https://doi.org/10.5281/zenodo.20632933))
+archived on Zenodo, concept DOI [10.5281/zenodo.20632932](https://doi.org/10.5281/zenodo.20632932) — always resolves to the latest version)
 and the methodological lineage above (Reiter 2005; Nowok, Raab & Dibben 2016). The
 method was first applied in Ouaknine, Elisha & Hasisi (2026), *The Effect of Mass
 Prisoner Release on Terrorist Recidivism: A Propensity Score Analysis of the Shalit

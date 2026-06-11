@@ -24,7 +24,7 @@ to 1.0 to reflect its production use and documented, tested, stable interface.
   many-to-many links (detected as a non-unique parent key), `ValueError` for missing
   or dangling key/parent references — instead of failing silently.
 - `paper.bib`: the forthcoming Shalit-deal study marked precisely as *in press*.
-- Added the Zenodo archive DOI (10.5281/zenodo.20632933) to the paper, README, and
+- Added the Zenodo archive DOI (10.5281/zenodo.20632932) to the paper, README, and
   citation file; documented the out-of-scope error behaviour in the docs.
 
 ### Added

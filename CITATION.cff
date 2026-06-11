@@ -9,7 +9,7 @@ authors:
     email: "yohanan.ouaknine@ois.co.il"
     affiliation: "OIS (https://ois.co.il); Department of Criminology, Ashkelon Academic College"
 version: "1.0.0"
-doi: "10.5281/zenodo.20632933"
+doi: "10.5281/zenodo.20632932"
 date-released: "2026-06-11"
 license: MIT
 repository-code: "https://github.com/yohananouaknine/oissyntheticdata"
