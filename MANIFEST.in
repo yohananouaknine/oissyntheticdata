@@ -1,0 +1,7 @@
+include LICENSE README.md CHANGELOG.md CITATION.cff TUTORIAL.md
+include paper.md paper.bib PUBLISHING.md CONTRIBUTING.md
+recursive-include scripts *.py
+recursive-include examples *.md
+recursive-include tools *.py
+recursive-include tests *.py
+global-exclude __pycache__/* *.py[cod]

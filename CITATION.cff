@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "oissyntheticdata: zero-dependency sequential CART synthesis for secure research"
+title: "oissyntheticdata: profile-based synthetic data for secure research"
 message: "If you use this software, please cite it using the metadata below."
 type: software
 authors:
@@ -7,8 +7,8 @@ authors:
     family-names: Ouaknine
     orcid: "https://orcid.org/0000-0002-4186-7351"
     email: "yohanan.ouaknine@ois.co.il"
-    affiliation: "OIS (https://ois.co.il); Department of Criminology, Ashkelon Academic College"
-version: "1.0.0"
+    affiliation: "OIS (https://ois.co.il); formerly Head of the Research Branch, Israel Prison Service"
+version: "2.1.0"
 doi: "10.5281/zenodo.20632932"
 date-released: "2026-06-11"
 license: MIT
@@ -16,58 +16,57 @@ repository-code: "https://github.com/yohananouaknine/oissyntheticdata"
 url: "https://ois.co.il"
 keywords:
   - synthetic data
-  - synthpop
   - statistical disclosure control
-  - CART
   - privacy
   - secure research
   - microdata
+  - k-anonymity
+  - referential integrity
 abstract: >-
-  oissyntheticdata is a zero-dependency, pure-Python implementation of sequential
-  CART synthesis in the synthpop tradition, including relational (multi-table)
-  synthesis that preserves referential integrity. It is designed for the
-  develop-on-synthetic, run-on-real workflow used in secure research environments,
-  where the synthetic data supports off-site development and the final analysis is
-  run on the confidential data on-premises. Maintained by OIS.
+  oissyntheticdata is a zero-dependency, pure-Python tool that generates
+  structurally faithful synthetic data for secure research environments without
+  the synthesizer ever reading the confidential microdata. An on-premises stage
+  emits a disclosure-controlled profile of the real data (robust numeric bounds,
+  k-suppressed categorical levels, format signatures for identifiers, and the
+  distribution of group sizes for fan-out keys); an off-premises stage rebuilds
+  a synthetic dataset from that profile alone, preserving column types, ranges,
+  category levels, missingness, ID formats and cross-file referential integrity;
+  and an inside-only control stage scores structural fidelity. The synthetic
+  data is built for code-path coverage so analysts can develop and debug
+  off-site, then run the final analysis on the real data on-premises. Maintained
+  by OIS.
 references:
-  - type: article
-    title: "synthpop: Bespoke Creation of Synthetic Data in R"
+  - type: data
+    title: "SIPP Synthetic Beta (SSB)"
     authors:
-      - given-names: Beata
-        family-names: Nowok
-      - given-names: "Gillian M."
-        family-names: Raab
-      - given-names: Chris
-        family-names: Dibben
-    journal: "Journal of Statistical Software"
-    year: 2016
-    volume: 74
-    issue: 11
-    doi: 10.18637/jss.v074.i11
+      - name: "U.S. Census Bureau"
+    url: "https://census.gov/programs-surveys/sipp/guidance/sipp-synthetic-beta-data-product.html"
+    notes: "Government deployment of the develop-on-synthetic, run-on-confidential workflow."
   - type: article
-    title: "Using CART to generate partially synthetic public use microdata"
+    title: "k-anonymity: a model for protecting privacy"
     authors:
-      - given-names: "Jerome P."
-        family-names: Reiter
-    journal: "Journal of Official Statistics"
-    year: 2005
-    volume: 21
-    issue: 3
-    start: 441
-    end: 462
+      - given-names: Latanya
+        family-names: Sweeney
+    year: 2002
+    doi: "10.1142/S0218488502001648"
+    url: "https://doi.org/10.1142/S0218488502001648"
+  - type: book
+    title: "Synthetic Datasets for Statistical Disclosure Control"
+    authors:
+      - given-names: "Jörg"
+        family-names: Drechsler
+    year: 2011
+    doi: "10.1007/978-1-4614-0326-5"
+    url: "https://doi.org/10.1007/978-1-4614-0326-5"
   - type: article
-    title: "Verification servers: enabling analysts to assess the quality of inferences from public use data"
+    title: "Statistical Disclosure Control for Micro-Data Using the R Package sdcMicro"
     authors:
-      - given-names: "Jerome P."
-        family-names: Reiter
-      - given-names: Anna
-        family-names: Oganian
-      - given-names: "Alan F."
-        family-names: Karr
-    journal: "Computational Statistics & Data Analysis"
-    year: 2009
-    volume: 53
-    issue: 4
-    start: 1475
-    end: 1482
-    doi: 10.1016/j.csda.2008.10.006
+      - given-names: Matthias
+        family-names: Templ
+      - given-names: Alexander
+        family-names: Kowarik
+      - given-names: Bernhard
+        family-names: Meindl
+    year: 2015
+    doi: "10.18637/jss.v067.i04"
+    url: "https://doi.org/10.18637/jss.v067.i04"

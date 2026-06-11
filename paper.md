@@ -1,5 +1,5 @@
 ---
-title: 'oissyntheticdata: zero-dependency sequential CART synthesis for secure research, with relational support'
+title: 'oissyntheticdata: profile-based synthetic data for secure research environments'
 tags:
   - Python
   - synthetic data
@@ -12,165 +12,130 @@ authors:
   - name: "Yohanan Ouaknine"
     orcid: 0000-0002-4186-7351
     corresponding: true
-    affiliation: "1, 2"
+    affiliation: 1
 affiliations:
   - name: "OIS, Israel (https://ois.co.il)"
     index: 1
-  - name: "Department of Criminology, Ashkelon Academic College, Israel"
-    index: 2
-date: 10 June 2026
+date: 11 June 2026
 bibliography: paper.bib
 ---
 
 # Summary
 
-`oissyntheticdata` generates a synthetic copy of a sensitive dataset that
-preserves the *relationships between variables*, not merely each column's
-marginal distribution. It implements **sequential CART synthesis** — the method
-introduced for synthetic microdata by @reiter2005cart and popularised by the R
-package `synthpop` [@nowok2016synthpop] — and contributes a **relational
-(multi-table) extension** that keeps referential integrity and parent-to-child
-structure. The package is written entirely in the Python standard library, with
-**no third-party runtime dependencies**, so it installs by copying one directory,
-runs inside locked secure-research environments that forbid `pip`/`conda` and have
-no internet access, and is small enough for a data owner to read and audit in
-full.
+`oissyntheticdata` generates a structurally faithful **synthetic** copy of a
+sensitive dataset for use in secure research environments, with one defining
+property: **the synthesizer never reads the confidential microdata**. Instead, an
+on-premises stage distils the real data into a *disclosure-controlled profile* -
+robust numeric bounds, k-suppressed categorical frequencies, format signatures
+for identifiers, and the distribution of group sizes for fan-out keys - and the
+off-premises stage rebuilds a synthetic dataset from that profile alone. The
+profile is the only artefact that crosses the trust boundary on the way out;
+later, only the analyst's aggregate results cross back in. The microdata stays
+on-premises throughout.
 
-`oissyntheticdata` operationalises the *develop-on-synthetic, run-on-real*
-workflow of official statistics: analysts develop and debug analysis code off-site
-on synthetic data, then run the finished code on the confidential data
-on-premises and release only vetted aggregates [@nowok2016synthpop;
-@reiter2009verification]. The synthetic data is a rehearsal space, never the
-source of published numbers. It is maintained by OIS (https://ois.co.il), which
-offers supporting services to government research units and academic researchers.
+The package is written entirely in the Python standard library, with **no
+third-party runtime dependencies**, so it installs by copying one directory,
+runs inside locked secure-research environments that forbid `pip`/`conda` and
+have no internet access, and is small enough for a data owner to read and audit
+in full. It operationalises the *develop-on-synthetic, run-on-real* workflow of
+official statistics [@hundepool2012sdc], as deployed in the U.S. Census Bureau's
+SIPP Synthetic Beta [@census_ssb]: analysts develop and debug analysis
+code off-site against the synthetic data, then run the final, unchanged script
+on the confidential data on-premises.
 
 # Statement of need
 
-Confidential microdata in justice, health, tax, and social research cannot leave
-the secure environment, yet analysts still need realistic data to write and
-validate code. The author encountered this concretely while serving as Head of the
-Research Branch at the Israel Prison Service (IPS) and conducting a study of
-terrorist recidivism after the 2011 Shalit prisoner exchange [@ouaknine2026shalit]:
-the analysis had to be run on-site at IPS, under Research Committee authorization
-(Protocol No. 58), on a secure system with no internet, using a custom analysis
-program restricted to the Python standard library, with only aggregate outputs
-extracted. In that setting the analyst cannot install packages, cannot take data
-out, and cannot iterate on the real data at will. The practical solution — extract
-disclosure-controlled metadata, build synthetic data off-site, develop the
-standard-library analysis script against it, and run the finished script on the
-real data in place — is the workflow this package supports. `oissyntheticdata`
-generalises and opens that approach.
+Statistical disclosure control balances analytic utility against re-identification
+risk [@hundepool2012sdc; @sweeney2002kanonymity]. Synthetic microdata is an
+established route to that balance [@drechsler2011synthetic; @templ2015sdcmicro],
+and high-fidelity generators such as sequential CART synthesis
+[@nowok2016synthpop] reproduce the joint distribution well. Those generators,
+however, must **read the real microdata** to fit their models, so the
+synthesiser has to run inside the secure environment, and the synthetic output
+itself can carry residual disclosure risk that must be separately controlled.
 
-Mature tools exist for parts of this problem — `synthpop` in R
-[@nowok2016synthpop], the U.S. Census Bureau's SIPP Synthetic Beta with validation
-on confidential files [@censusssb], and general frameworks such as the Synthetic
-Data Vault [@patki2016sdv]. The contribution of `oissyntheticdata` is to meet two
-requirements that arise together in the most restrictive secure settings and that
-those tools do not jointly satisfy:
+Many secure-research workflows do not need full multivariate realism. They need
+a synthetic dataset that is *structurally* identical to the real one - same
+column types, ranges, category levels (including the rare ones), missingness,
+identifier formats, and cross-table joins - so that analysis code exercises every
+branch, filter and join it will meet on the real data. For that purpose, the
+load-bearing requirement is a clean boundary: the component that leaves the
+secure environment should never have touched the microdata at all.
 
-1. **Auditability with no dependencies.** The strictest environments prohibit
-   external packages, and a data owner must be able to read the whole synthesizer
-   before it touches confidential records. `oissyntheticdata` therefore implements
-   CART, tree fitting, and CSV/XLSX I/O from the standard library alone.
-2. **Relational integrity.** Administrative data is usually split across linked
-   tables (one row per person; many records per person). Synthesizing each table
-   independently severs the foreign-key relationships, so any analysis that joins
-   tables behaves differently on synthetic than on real data — precisely the code
-   paths the rehearsal is meant to exercise.
+`oissyntheticdata` targets exactly this case. Its threat model is explicit and
+narrow: the only thing that leaves the environment is a profile that, by
+construction, contains no identifiable value - no raw record, no unsuppressed
+small cell, no enumerated identifier, no true extreme. The synthetic data is
+built for **code-path coverage rather than statistical realism**, and synthetic
+numbers are never reported. This makes the tool a complement to, not a competitor
+of, joint-distribution synthesisers: it trades multivariate fidelity for a
+stronger and simpler disclosure boundary.
 
-# Design and key decisions
+# Design and functionality
 
-The intellectual content is in the design choices, not the line count.
+The workflow is a four-stage pipeline across a single trust boundary.
 
-**Two synthesizers for two trust profiles.** A companion metadata-only synthesizer
-can run *off*-premises because it never reads raw records, but preserves only
-per-column structure. `oissyntheticdata` instead fits on the real microdata to
-preserve joint structure, and so runs *on*-premises; only the synthetic output
-leaves. Treating "where the synthesizer may run" as a first-class design axis keeps
-the confidentiality reasoning explicit.
+**Stage 00 (`add-month`, run anywhere).** A small preprocessor that inserts a
+derived `<date>_month` column after each date column, so monthly seasonality
+becomes an ordinary categorical that the rest of the pipeline can model.
 
-**Donor-leaf sampling, not prediction.** Each tree stores, at every leaf, the real
-target values that reached it; synthesis draws a value from that pool. Sampling
-donors rather than emitting a point estimate reproduces the conditional
-distribution [@reiter2005cart].
+**Stage 01 (`profile`, inside).** Reads the real data and writes a
+disclosure-safe profile (`profile_<base>.json` plus a human-readable summary).
+Each column is classified and reduced to a *shape* rather than its values:
 
-**One confidentiality invariant.** A single parameter, `min_leaf` (`k`), enforces a
-`k`-record floor on every marginal cell, tree leaf, fan-out estimate, and (via
-surrogate keys) every identifier — one auditable invariant rather than scattered
-thresholds.
+- numeric columns keep a mean, a standard deviation and a quantile grid, with
+  **robust bounds** (the 1st and 99th percentiles replace the true extremes, so
+  outliers do not leak);
+- categorical columns keep level frequencies, but any level with fewer than `k`
+  records (default `k = 5`) is relabelled `RARE_###` - the count is kept, the
+  label is dropped [@sweeney2002kanonymity];
+- unique integer keys keep only the fact that they are unique, plus a length
+  range;
+- fan-out / foreign keys keep only the *distribution* of their group sizes,
+  never an identifier tied to its count;
+- high-cardinality text and identifiers keep only a format signature (e.g.
+  `DD-DDDDDD`) and a length range; their values are never enumerated;
+- date columns keep their format, range, and per-year / per-month shape.
 
-**Relational by conditioning, not joining.** For linked tables the parent is
-synthesized first and given fresh surrogate keys; a regression CART models the
-number of children per parent from the parent's attributes; foreign keys are drawn
-from the synthetic parent keys; and each child's columns are synthesized
-*conditioned on its parent's synthetic attributes*. This preserves referential
-integrity, attribute-dependent fan-out, and parent-to-child correlation without
-materialising a real join. A single-parent DAG (star, snowflake, chains) is
-supported; many-to-many and compound keys are deliberately out of scope and are
-rejected at validation time with an explicit error (a `NotImplementedError` for
-compound keys and many-to-many links — detected as a non-unique parent key — and a
-`ValueError` for missing or dangling references) rather than failing silently.
+Columns that are key-like in two or more files are flagged as shared relational
+keys.
 
-**Build on, don't reinvent.** The estimator is the established CART-synthesis
-method; the new work is the dependency-free, auditable, relational realisation for
-locked environments.
+**Stage 02 (`synthesize`, outside).** Reads the profile - and only the profile -
+and rebuilds each column by sampling from its stored shape: inverse-CDF sampling
+over the quantile grid for numerics, stored frequencies for categoricals (every
+level, including the rare ones, is forced to appear so downstream code meets it),
+seasonal sampling for dates, and format-signature generation for identifiers.
+For relational data the synthesiser mints one shared key pool per shared key:
+the file in which the key is unique defines the parent pool, and child files draw
+a subset, so synthetic child keys are always a subset of synthetic parent keys
+and cross-file joins line up.
 
-# State of the field
+**Stage 03 (`compare`, inside-only control).** A control step, not an analyst
+step. It reads the real data on-premises and scores how structurally close the
+synthetic data is: a chance-corrected distributional agreement (`kappa*`) for
+categoricals, `1 - KS` for numerics and dates, format-signature agreement for
+identifiers, group-size agreement for fan-out keys, and cross-file referential
+integrity. Only column-level scores leave the environment. It is explicitly not a
+privacy test and not a validity test of analytic results - those come from the
+real run.
 
-`oissyntheticdata` sits in the synthetic-data-for-disclosure-control tradition
-[@rubin1993; @little1993; @drechsler2011]. Relative to `synthpop`
-[@nowok2016synthpop] it offers a dependency-free Python implementation with
-relational support; relative to the Synthetic Data Vault [@patki2016sdv] it trades
-breadth of models for auditability and zero dependencies; and it produces the
-development data that verification/validation-server workflows rely on
-[@reiter2009verification]. National programs use the same paradigm operationally
-[@censusssb; @nowok2017uk].
+# Reproducibility and audit
 
-# Real-world use and significance
-
-The method this package implements was first deployed by the author at the Israel
-Prison Service for a study of terrorist recidivism following the Shalit prisoner
-exchange [@ouaknine2026shalit] — authorized by the IPS Research Committee (Protocol
-No. 58), executed on-premises on real administrative records with a
-standard-library analysis script, and released as aggregate results. That study was
-presented at the annual conference of the Israeli Society of Criminology (May 2026)
-and is in publication. `oissyntheticdata` packages the same approach for reuse by
-other secure-research units, and OIS (https://ois.co.il) offers deployment,
-validation, and training services around the open core.
-
-# Quality control and reproducibility
-
-The package ships a `unittest` suite covering output shape, reproducibility under a
-fixed seed, single-table conditional fidelity, and relational referential
-integrity. Two runnable reference analyses are included: one shows that a
-deterministic conditional rule survives single-table synthesis where an independent
-marginal synthesizer would break it; the other shows that, for linked tables, every
-synthetic foreign key resolves (zero orphan joins), the per-parent fan-out tracks a
-parent attribute, and a parent-to-child relationship is preserved.
-
-# Development, governance, and contributions
-
-`oissyntheticdata` is developed in the open under the MIT license, with versioned
-releases archived on Zenodo (concept DOI: 10.5281/zenodo.20632932, resolving to the latest version), a changelog, a citation
-file, public issue tracking, and a contributing guide. Maintenance and decision
-responsibilities are stated in the repository, and the design rationale lives in the
-user-facing documentation.
-
-# Generative AI disclosure
-
-During the development of this software and the preparation of this manuscript, the
-author used a generative AI assistant (Claude, Anthropic) to help draft and
-refactor portions of the code and the text. All AI-assisted output was reviewed,
-tested, and edited by the author, who takes full responsibility for the design,
-correctness, and integrity of the software and this paper. The problem framing, the
-design decisions and abstractions described above, and the testing and
-documentation practices are the author's own.
+The four numbered scripts in `scripts/` are auto-generated from the package by a
+bundler that inlines the shared I/O and helper modules, so each script is a
+single self-contained, zero-dependency file suitable for carrying into and
+auditing within a locked environment. The package and the standalone scripts
+produce byte-identical output, and a round-trip test enforces that they remain in
+sync. Synthesis is seeded, so a given profile yields a reproducible synthetic
+dataset.
 
 # Acknowledgements
 
-The author thanks the Israel Prison Service Research Committee for authorizing the
-original study (Protocol No. 58), and acknowledges the methodological lineage of
-synthetic data for statistical disclosure control, in particular the `synthpop`
-authors and J. P. Reiter.
+Developed and maintained by OIS (https://ois.co.il). The disclosure-control
+concept this package implements was first applied in research at the Israel
+Prison Service research unit, in a study of terrorist recidivism following the
+2011 Shalit prisoner exchange, under Research Committee authorization. This
+package is a later, general, open implementation of that concept and was not
+itself used in that research.
 
 # References

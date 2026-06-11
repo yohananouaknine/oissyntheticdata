@@ -1,95 +1,61 @@
+@misc{census_ssb,
+  title        = {{SIPP Synthetic Beta (SSB)}},
+  author       = {{U.S. Census Bureau}},
+  howpublished = {\url{https://census.gov/programs-surveys/sipp/guidance/sipp-synthetic-beta-data-product.html}},
+  note         = {Government deployment of the develop-on-synthetic, run-on-confidential workflow},
+  url          = {https://census.gov/programs-surveys/sipp/guidance/sipp-synthetic-beta-data-product.html}
+}
+
+@book{hundepool2012sdc,
+  title     = {Statistical Disclosure Control},
+  author    = {Hundepool, Anco and Domingo-Ferrer, Josep and Franconi, Luisa and Giessing, Sarah and Nordholt, Eric Schulte and Spicer, Keith and de Wolf, Peter-Paul},
+  year      = {2012},
+  publisher = {Wiley},
+  doi       = {10.1002/9781118348239},
+  url       = {https://doi.org/10.1002/9781118348239}
+}
+
+@article{sweeney2002kanonymity,
+  title   = {k-anonymity: a model for protecting privacy},
+  author  = {Sweeney, Latanya},
+  journal = {International Journal of Uncertainty, Fuzziness and Knowledge-Based Systems},
+  volume  = {10},
+  number  = {5},
+  pages   = {557--570},
+  year    = {2002},
+  doi     = {10.1142/S0218488502001648},
+  url     = {https://doi.org/10.1142/S0218488502001648}
+}
+
+@book{drechsler2011synthetic,
+  title     = {Synthetic Datasets for Statistical Disclosure Control: Theory and Implementation},
+  author    = {Drechsler, J{\"o}rg},
+  series    = {Lecture Notes in Statistics},
+  volume    = {201},
+  year      = {2011},
+  publisher = {Springer},
+  doi       = {10.1007/978-1-4614-0326-5},
+  url       = {https://doi.org/10.1007/978-1-4614-0326-5}
+}
+
+@article{templ2015sdcmicro,
+  title   = {Statistical Disclosure Control for Micro-Data Using the {R} Package {sdcMicro}},
+  author  = {Templ, Matthias and Kowarik, Alexander and Meindl, Bernhard},
+  journal = {Journal of Statistical Software},
+  volume  = {67},
+  number  = {4},
+  year    = {2015},
+  doi     = {10.18637/jss.v067.i04},
+  url     = {https://doi.org/10.18637/jss.v067.i04}
+}
+
 @article{nowok2016synthpop,
   title   = {synthpop: Bespoke Creation of Synthetic Data in {R}},
   author  = {Nowok, Beata and Raab, Gillian M. and Dibben, Chris},
   journal = {Journal of Statistical Software},
-  year    = {2016},
   volume  = {74},
   number  = {11},
-  pages   = {1--26},
-  doi     = {10.18637/jss.v074.i11}
-}
-
-@article{reiter2005cart,
-  title   = {Using {CART} to Generate Partially Synthetic Public Use Microdata},
-  author  = {Reiter, Jerome P.},
-  journal = {Journal of Official Statistics},
-  year    = {2005},
-  volume  = {21},
-  number  = {3},
-  pages   = {441--462}
-}
-
-@article{reiter2009verification,
-  title   = {Verification Servers: Enabling Analysts to Assess the Quality of Inferences from Public Use Data},
-  author  = {Reiter, Jerome P. and Oganian, Anna and Karr, Alan F.},
-  journal = {Computational Statistics \& Data Analysis},
-  year    = {2009},
-  volume  = {53},
-  number  = {4},
-  pages   = {1475--1482},
-  doi     = {10.1016/j.csda.2008.10.006}
-}
-
-@article{rubin1993,
-  title   = {Statistical Disclosure Limitation},
-  author  = {Rubin, Donald B.},
-  journal = {Journal of Official Statistics},
-  year    = {1993},
-  volume  = {9},
-  number  = {2},
-  pages   = {461--468}
-}
-
-@article{little1993,
-  title   = {Statistical Analysis of Masked Data},
-  author  = {Little, Roderick J. A.},
-  journal = {Journal of Official Statistics},
-  year    = {1993},
-  volume  = {9},
-  number  = {2},
-  pages   = {407--426}
-}
-
-@book{drechsler2011,
-  title     = {Synthetic Datasets for Statistical Disclosure Control: Theory and Implementation},
-  author    = {Drechsler, J{\"o}rg},
-  year      = {2011},
-  publisher = {Springer},
-  series    = {Lecture Notes in Statistics},
-  volume    = {201},
-  doi       = {10.1007/978-1-4614-0326-5}
-}
-
-@article{nowok2017uk,
-  title   = {Providing Bespoke Synthetic Data for the {UK} Longitudinal Studies and Other Sensitive Data with the synthpop Package for {R}},
-  author  = {Nowok, Beata and Raab, Gillian M. and Dibben, Chris},
-  journal = {Statistical Journal of the IAOS},
-  year    = {2017},
-  volume  = {33},
-  number  = {3},
-  pages   = {785--796},
-  doi     = {10.3233/SJI-150153}
-}
-
-@inproceedings{patki2016sdv,
-  title     = {The Synthetic Data Vault},
-  author    = {Patki, Neha and Wedge, Roy and Veeramachaneni, Kalyan},
-  booktitle = {2016 IEEE International Conference on Data Science and Advanced Analytics (DSAA)},
-  year      = {2016},
-  pages     = {399--410},
-  doi       = {10.1109/DSAA.2016.49}
-}
-
-@misc{censusssb,
-  title        = {{SIPP} Synthetic Beta Data Product},
-  author       = {{U.S. Census Bureau}},
-  howpublished = {Codebook and validation guidelines; synthetic development data with validation on the confidential Gold Standard files},
-  note         = {Accessed 2026}
-}
-
-@unpublished{ouaknine2026shalit,
-  title   = {The Effect of Mass Prisoner Release on Terrorist Recidivism: A Propensity Score Analysis of the {Shalit} Deal},
-  author  = {Ouaknine, Yohanan and Elisha, Ety and Hasisi, Badi},
-  year    = {2026},
-  note    = {In press. Presented at the annual conference of the Israeli Society of Criminology, May 2026. Update with journal/DOI or preprint URL when available.}
+  year    = {2016},
+  doi     = {10.18637/jss.v074.i11},
+  url     = {https://doi.org/10.18637/jss.v074.i11}
 }

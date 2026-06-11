@@ -1,181 +1,117 @@
-# Publishing `oissyntheticdata`
+# Publishing `oissyntheticdata` 2.1.0
 
-A practical, copy-paste guide to releasing `oissyntheticdata` as an open-source package
-with a citable DOI. Four things are independent: **(A)** put the code on GitHub,
-**(B)** publish to PyPI so people can `pip install oissyntheticdata`, **(C)** mint a Zenodo
-DOI so the software is citable **now**, and **(D)** pursue a JOSS paper **later**,
-once the project meets JOSS's open-development and impact criteria.
+Release in this order: **GitHub → PyPI → Zenodo**. GitHub holds the source and the
+tag; PyPI distributes the installable package; Zenodo archives the tagged release
+and mints the citable DOI. Do them in order because the Zenodo archive is created
+from the GitHub release/tag.
 
-> **Citability path:** Do A + B + C now — a Zenodo (or Software Heritage) archival
-> DOI makes the software citable immediately, and JOSS itself recognises these as
-> valid ways to cite software. Treat JOSS (D) as a later milestone, not a launch
-> step (see the eligibility notes there).
+All commands run from the repo root. Replace nothing except where noted.
 
-> Repository URLs are set to `github.com/yohananouaknine/oissyntheticdata`. The PyPI name
-> `oissyntheticdata` was confirmed available on PyPI; if you ever rename, update
-> `pyproject.toml` and the references below.
-
-
----
-
-## 0. Prerequisites
+## 0. Pre-flight (once per release)
 
 ```bash
-python -m pip install --upgrade pip build twine
+python tools/build_standalone.py        # regenerate scripts/ from src/
+pip install -e ".[test]"
+pytest -q                               # round-trip + disclosure guarantees must pass
+python -c "import oissyntheticdata as o; print(o.__version__)"   # -> 2.1.0
 ```
 
-- A GitHub account (for A/C) and a PyPI account (for B): https://pypi.org/account/register/
-- Enable 2-factor auth on PyPI (required) and create an **API token**
-  (Account settings → API tokens). You will paste it as the password when
-  uploading, with username `__token__`.
+Confirm the version is `2.1.0` in **pyproject.toml**, **src/oissyntheticdata/__init__.py**,
+**CITATION.cff**, and the top of **CHANGELOG.md**. Commit any changes.
 
----
+## 1. GitHub
 
-## A. GitHub repository
+If the remote does not exist yet:
 
 ```bash
-cd oissyntheticdata_pkg
 git init
 git add .
-git commit -m "oissyntheticdata 0.1.0: pure-Python sequential CART synthesis"
+git commit -m "oissyntheticdata 2.1.0: profile-based pipeline"
 git branch -M main
 git remote add origin https://github.com/yohananouaknine/oissyntheticdata.git
 git push -u origin main
 ```
 
-Recommended repo hygiene:
-
-- Add a `.gitignore` (at least: `__pycache__/`, `*.pyc`, `dist/`, `build/`,
-  `*.egg-info/`, `.venv/`).
-- Confirm `LICENSE` (MIT) is present at the root.
-- The `README.md` renders as the project front page automatically.
-- Tag the release so it is permanent and (optionally) archivable:
+For a subsequent release, commit and push to `main`, then tag:
 
 ```bash
-git tag -a v0.1.0 -m "oissyntheticdata 0.1.0"
-git push origin v0.1.0
+git tag -a v2.1.0 -m "2.1.0 - profile-based synthetic data pipeline"
+git push origin v2.1.0
 ```
 
----
+Then on github.com: **Releases → Draft a new release → choose tag `v2.1.0`**,
+title `oissyntheticdata 2.1.0`, paste the 2.1.0 section of `CHANGELOG.md`, and
+**Publish release**. (Leave Zenodo until step 3 - enabling the webhook first, see
+below, makes this release auto-archive.)
 
-## B. Publish to PyPI
+## 2. PyPI
 
-1. **Sanity-check the metadata** in `pyproject.toml` (name, version, URLs —
-   confirm the name). Bump `version` here and in `oissyntheticdata/__init__.py`
-   (`__version__`) and `CHANGELOG.md` for every release; they must agree.
+Build the distributions. `build`/`twine` are the usual tools; if they are not
+available you can build with setuptools directly (no internet needed once
+setuptools + wheel are present):
 
-2. **Build the distributions** (creates `dist/*.whl` and `dist/*.tar.gz`):
+```bash
+# preferred
+python -m build                         # -> dist/oissyntheticdata-2.1.0.tar.gz + .whl
 
-   ```bash
-   python -m build
-   ```
-
-3. **Check them**:
-
-   ```bash
-   python -m twine check dist/*
-   ```
-
-4. **Upload to TestPyPI first** (a sandbox, so you can rehearse safely):
-
-   ```bash
-   python -m twine upload --repository testpypi dist/*
-   # then test the install in a clean virtual environment:
-   python -m venv /tmp/t && /tmp/t/bin/pip install \
-       --index-url https://test.pypi.org/simple/ oissyntheticdata
-   /tmp/t/bin/python -c "import oissyntheticdata; print(oissyntheticdata.__version__)"
-   ```
-
-5. **Upload to the real PyPI**:
-
-   ```bash
-   python -m twine upload dist/*
-   # username: __token__   password: <your PyPI API token>
-   ```
-
-   Now anyone can `pip install oissyntheticdata`.
-
-6. **For later releases**: bump the version, rebuild, re-upload. PyPI will not
-   let you overwrite an existing version — always increment.
-
-> Tip: you can fully automate B with a GitHub Action that publishes on every
-> tagged release using PyPI **Trusted Publishing** (OIDC, no stored token).
-> See https://docs.pypi.org/trusted-publishers/.
-
----
-
-## C. Citable DOI via Zenodo
-
-1. Sign in to https://zenodo.org with your GitHub account.
-2. In Zenodo → **Settings → GitHub**, flip the switch **ON** for the `oissyntheticdata`
-   repository.
-3. Back on GitHub, **create a release** from the `v0.1.0` tag
-   (Releases → Draft a new release → choose the tag → Publish).
-4. Zenodo automatically archives that release and issues a DOI. Add the DOI
-   badge it gives you to the top of `README.md`, and record the citation in
-   `CHANGELOG.md`.
-
-Optional: add a `CITATION.cff` file at the repo root so GitHub shows a "Cite
-this repository" button. Minimal example:
-
-```yaml
-cff-version: 1.2.0
-title: "oissyntheticdata: pure-Python sequential CART synthesis"
-message: "If you use this software, please cite it."
-authors:
-  - family-names: "<your surname>"
-    given-names: "<your given name>"
-version: 0.1.0
-date-released: 2026-06-10
-license: MIT
-repository-code: "https://github.com/yohananouaknine/oissyntheticdata"
+# fallback if `build` is unavailable
+python - <<'PY'
+from setuptools import build_meta as b
+import os; os.makedirs("dist", exist_ok=True)
+print(b.build_sdist("dist")); print(b.build_wheel("dist"))
+PY
 ```
 
----
+Check and upload (TestPyPI first is recommended):
 
-## D. Later: a software paper (JOSS) — read the eligibility bar first
+```bash
+python -m twine check dist/*
+python -m twine upload --repository testpypi dist/*     # optional dry run
+python -m twine upload dist/*                           # real PyPI
+```
 
-The **Journal of Open Source Software** (https://joss.theoj.org) reviews the
-repository itself, and `paper.md` + `paper.bib` are already written. But under
-JOSS's updated scope (2025+), a freshly created, AI-assisted package **is not yet
-eligible**. Do not submit on launch. The relevant requirements:
+You will need a PyPI account and an API token (`__token__` as username). After
+upload, verify:
 
-- **Public open-development history.** Projects developed privately and then
-  posted are ineligible until there is **at least six months of public history**
-  before submission, with **versioned releases and public issues/pull requests**.
-  Develop in the open from the start; a private build followed by a public dump
-  does not qualify.
-- **Extra scrutiny for very new / AI-assisted code.** Commit histories of only
-  weeks, or signs of rapid AI-assisted generation, invite additional review to
-  confirm genuine scholarship. Disclose AI assistance honestly (already done in
-  `paper.md` and `README.md`) and let the public history demonstrate real work.
-- **Evidence of reuse and significance, not effort.** JOSS now weighs research
-  impact, design thinking, and open-source practice over lines of code. Show:
-  analyses or workflows that use `oissyntheticdata`, external adopters/integrations, or a
-  reproducible reference analysis/benchmark; the design decisions and trade-offs
-  (in the README and `paper.md`); and good practice (tests, docs, governance,
-  contribution pathway — all present).
-- **Sustained value.** Short-lived, single-use codebases are out of scope.
+```bash
+pip install oissyntheticdata==2.1.0
+```
 
-**Roadmap to eligibility**
+## 3. Zenodo (DOI)
 
-1. Make the GitHub repo public today; develop in the open (A + B + C above).
-2. Cut tagged releases as features land; keep `CHANGELOG.md` current.
-3. Use public Issues/PRs for real work; welcome outside contributions.
-4. Accumulate evidence of use — a reproducible reference analysis (the examples
-   are a start), and ideally an external study or adopter.
-5. After ≥ 6 months of public history with releases and issues, submit `paper.md`
-   to JOSS.
+You already have a Zenodo record for 1.0.0 with concept DOI
+`10.5281/zenodo.20632932` (it always resolves to the latest version).
 
-In the meantime, the Zenodo DOI (C) provides immediate, valid citability.
+**One-time setup:** at zenodo.org, log in with GitHub, open **Settings → GitHub**,
+and flip the toggle **on** for the `yohananouaknine/oissyntheticdata`
+repository. (Do this once; it installs the release webhook.)
 
----
+**Each release:** because the webhook is on, publishing the GitHub release in
+step 1 automatically creates a new **version** under the existing concept record
+and mints a new version DOI. To attach it as a new version of the 1.0.0 record
+rather than a brand-new record, use the same repository - Zenodo links them
+automatically.
 
-## Release checklist
+After Zenodo processes the release:
 
-- [ ] Version bumped in `pyproject.toml`, `oissyntheticdata/__init__.py`, `CHANGELOG.md` (all equal)
-- [ ] `python -m unittest -v` passes
-- [ ] `python -m build` and `python -m twine check dist/*` clean
-- [ ] Rehearsed install from TestPyPI in a fresh venv
-- [ ] Git tag pushed; GitHub release published (triggers Zenodo DOI)
-- [ ] `pip install oissyntheticdata` works from a clean environment
+1. Copy the **2.1.0 version DOI** from the Zenodo record.
+2. If you prefer to pin the citation to this version, set `doi:` in
+   `CITATION.cff` to the 2.1.0 version DOI (otherwise leave the concept DOI,
+   which always points at the latest). Commit the change.
+3. Add the DOI badge to `README.md` if desired:
+   `[![DOI](https://zenodo.org/badge/DOI/<your-doi>.svg)](https://doi.org/<your-doi>)`
+
+## 4. (Optional) JOSS
+
+`paper.md` + `paper.bib` are ready for a Journal of Open Source Software
+submission. Submit at https://joss.theoj.org with the repository URL and the
+archived Zenodo DOI from step 3.
+
+## Checklist
+
+- [ ] `python tools/build_standalone.py` run; `scripts/` regenerated
+- [ ] `pytest -q` green
+- [ ] version is `2.1.0` in pyproject, `__init__`, CITATION.cff, CHANGELOG
+- [ ] pushed to GitHub `main`; tag `v2.1.0` pushed; GitHub release published
+- [ ] `dist/*` built and `twine check` clean; uploaded to PyPI; `pip install` verified
+- [ ] Zenodo GitHub toggle on; version DOI minted; CITATION.cff DOI updated if pinning

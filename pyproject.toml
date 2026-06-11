@@ -4,19 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oissyntheticdata"
-version = "1.0.0"
-description = "Zero-dependency sequential CART synthesis for secure research (synthpop tradition), with relational support. An OIS tool."
+version = "2.1.0"
+description = "Profile-based synthetic data for secure research: a disclosure-safe profile crosses the boundary, the synthesizer never sees the real data. Zero dependencies. An OIS tool."
 readme = "README.md"
 requires-python = ">=3.7"
 license = { file = "LICENSE" }
 authors = [{ name = "Yohanan Ouaknine", email = "yohanan.ouaknine@ois.co.il" }]
 maintainers = [{ name = "OIS", email = "yohanan.ouaknine@ois.co.il" }]
 keywords = [
-    "synthetic data", "synthpop", "statistical disclosure control",
-    "CART", "privacy", "secure research", "microdata", "anonymization",
+    "synthetic data", "statistical disclosure control", "privacy",
+    "secure research", "microdata", "anonymization", "data profiling",
+    "referential integrity", "k-anonymity",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -25,7 +26,7 @@ classifiers = [
     "Topic :: Security",
     "Operating System :: OS Independent",
 ]
-# Runtime dependencies: NONE. Standard library only — this is intentional.
+# Runtime dependencies: NONE. Standard library only - this is intentional.
 dependencies = []
 
 [project.urls]
@@ -34,8 +35,14 @@ Repository = "https://github.com/yohananouaknine/oissyntheticdata"
 Issues = "https://github.com/yohananouaknine/oissyntheticdata/issues"
 
 [project.scripts]
-oissyntheticdata = "oissyntheticdata.__main__:main"
-oissd = "oissyntheticdata.__main__:main"
+oissyntheticdata = "oissyntheticdata.cli:main"
+oissd = "oissyntheticdata.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
 
 [tool.setuptools]
-packages = ["oissyntheticdata"]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

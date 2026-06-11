@@ -1,57 +1,34 @@
-# Contributing to oissyntheticdata
+# Contributing
 
-Contributions are welcome and reviewed in the open. `oissyntheticdata` is developed
-publicly; please propose and discuss changes through the repository rather than
-sending private patches.
+Thanks for your interest in `oissyntheticdata`.
 
-## Ways to contribute
+## Ground rules
 
-- **Report a problem or ask a question** — open a GitHub Issue. For bugs, include
-  a minimal example, the expected vs. actual behaviour, your Python version, and
-  the `oissyntheticdata` version.
-- **Propose a change** — open an Issue first to discuss scope and design, then a
-  Pull Request referencing it. Small, focused PRs are easier to review.
-- **Improve documentation or examples** — these are first-class contributions.
+- **Zero runtime dependencies.** The package must run on the Python standard
+  library alone (Python >= 3.7). Do not add third-party runtime imports.
+- **The boundary is sacred.** Stage 02 (`synthesize`) must never read the real
+  data - only the profile. Stage 03 (`compare`) reads real data and is an
+  inside-only control; keep it out of any "researcher" code path.
+- **Single source of truth.** Edit the package in `src/oissyntheticdata/`. Never
+  hand-edit `scripts/0*.py` - regenerate them:
+  ```bash
+  python tools/build_standalone.py
+  ```
 
-## Ground rules that protect the project's goals
-
-`oissyntheticdata` exists to be auditable and to run in locked secure environments, so two
-constraints are non-negotiable:
-
-1. **No third-party runtime dependencies.** Everything under `oissyntheticdata/` must import
-   only the Python standard library. CI and review will reject runtime imports of
-   external packages. (Test/build tooling is exempt, but keep it minimal.)
-2. **Confidentiality is a design property, not an afterthought.** Any change that
-   could weaken disclosure control — e.g. relaxing the `min_leaf` floor, echoing
-   raw values, or reproducing identifiers — must be justified explicitly in the PR
-   and documented.
-
-## Development setup
+## Development
 
 ```bash
-git clone https://github.com/yohananouaknine/oissyntheticdata.git
-cd oissyntheticdata
-python -m unittest discover -s tests -p "test_*.py" -v
-python examples/quickstart.py
-python examples/relational.py
+pip install -e ".[test]"
+pytest -q                       # runs the round-trip equivalence test
+python tools/build_standalone.py
 ```
 
-## Pull request checklist
+The round-trip test profiles a tiny generated dataset, synthesises it, compares,
+and asserts that the standalone scripts and the package produce identical output.
+If you change any stage, run the bundler and the tests before opening a PR.
 
-- [ ] Standard library only under `oissyntheticdata/`
-- [ ] Tests added or updated; `python -m unittest discover -s tests` passes
-- [ ] Public API changes reflected in `README.md` and `CHANGELOG.md`
-- [ ] Version bumped in `pyproject.toml`, `oissyntheticdata/__init__.py`, `CHANGELOG.md` if releasing
-- [ ] Confidentiality impact considered and noted
+## Reporting issues
 
-## Code of conduct
-
-Be respectful and constructive. Maintainers may edit, close, or decline
-contributions that fall outside the project's scope (see the limitations section
-of the README).
-
-## Disclosure of AI assistance
-
-If you used a generative AI assistant to help prepare a contribution, you remain
-fully responsible for it: review, test, and understand the code before submitting,
-and note non-trivial AI assistance in the PR description.
+Open an issue at
+https://github.com/yohananouaknine/oissyntheticdata/issues with a minimal
+reproduction. Please do **not** attach real or confidential data.

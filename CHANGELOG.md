@@ -1,90 +1,57 @@
 # Changelog
 
-All notable changes to `oissyntheticdata` are documented here. This project follows
-[Semantic Versioning](https://semver.org/) and the
-[Keep a Changelog](https://keepachangelog.com/) format.
+All notable changes to this project are documented here. The format is based on
+[Keep a Changelog](https://keepachangelog.com/), and this project adheres to
+[Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.1.0] - 2026-06-11
 
-## [1.0.0] — 2026-06-11
-
-First stable release. Marks the public API (`synthesize`, `synthesize_relational`,
-the CLI, and the confidentiality parameters) as stable and supported. No functional
-change from the 0.2.1 pre-review hardening below; this release promotes the project
-to 1.0 to reflect its production use and documented, tested, stable interface.
-
-## [0.2.1] — 2026-06-11
-
-### Changed (JOSS pre-review hardening)
-- `_tree.py` (the from-scratch CART) rewritten for auditability: thorough
-  explanatory comments throughout, and the recursive builder now receives its
-  predictor columns explicitly instead of via module-level global state.
-- Relational synthesis now **validates the schema up front** and fails with a clear,
-  specific error on out-of-scope input — `NotImplementedError` for compound keys and
-  many-to-many links (detected as a non-unique parent key), `ValueError` for missing
-  or dangling key/parent references — instead of failing silently.
-- `paper.bib`: the forthcoming Shalit-deal study marked precisely as *in press*.
-- Added the Zenodo archive DOI (10.5281/zenodo.20632932) to the paper, README, and
-  citation file; documented the out-of-scope error behaviour in the docs.
-
-### Added
-- Tests for the relational validation errors (compound key, missing foreign key,
-  unknown parent, non-unique parent key).
-
-
-
-### Added / Changed (documentation & process; no code change)
-- Rebranded the package to **oissyntheticdata** (an OIS tool, https://ois.co.il),
-  maintained by Dr Yohanan Ouaknine (ORCID 0000-0002-4186-7351).
-- Recorded the method's real-world provenance: first deployed at the Israel Prison
-  Service for a terrorist-recidivism study (Shalit deal) under Research Committee
-  authorization (Protocol No. 58), presented at the Israeli Society of Criminology
-  conference (May 2026); paper in publication.
-
-### Added / Changed (documentation & process; no code change)
-- Rewrote `paper.md` to follow JOSS's updated scope: foregrounds problem framing,
-  design decisions and trade-offs, state of the field, quality control, and
-  development/governance, with a generative-AI disclosure.
-- Added `CONTRIBUTING.md` (contribution pathway, no-dependency and confidentiality
-  ground rules, PR checklist, AI-assistance disclosure).
-- Added Design-decisions, Governance/Support, and AI-disclosure sections to the README.
-- Reframed `PUBLISHING.md`: Zenodo/Software Heritage for immediate citability;
-  JOSS repositioned as a later milestone with its open-development eligibility bar.
-
-## [0.2.0] — 2026-06-10
-
-### Added
-- **Relational (multi-table) synthesis** (`synthesize_relational`,
-  `synthesize_relational_files`). Synthesizes a parent → child schema while
-  preserving referential integrity (every synthetic foreign key points at a
-  synthetic parent), the per-parent fan-out (modelled with a regression CART on
-  parent attributes), and parent → child attribute correlation (child columns are
-  synthesized conditioned on the parent's synthetic attributes). Supports a
-  single-parent DAG: star, snowflake, and chains.
-- Reusable typed core `synth_core` with support for *fixed* (given, not
-  synthesized) predictor columns; `type_columns` / `stringify` helpers.
+Documentation and metadata corrections. No change to the synthesis or profiling
+logic; the only output change is cosmetic (report text uses hyphens, not em-dashes).
 
 ### Changed
-- Internal refactor of `_synth` to share the synthesis core between single-table
-  and relational synthesis. Single-table behaviour and outputs are unchanged.
+- Provenance clarified: the disclosure-control concept, not this package, was
+  first applied in research at the Israel Prison Service research unit; this
+  package is a later, general, open implementation of that concept.
+- Maintainer affiliation corrected; removed the Ashkelon Academic College affiliation.
+- Lineage and sources restricted to government uses of synthetic data (U.S. Census
+  SIPP Synthetic Beta, OnTheMap / LEHD) with live links; academic references kept
+  only where a resolving link exists, each now carrying a DOI/URL.
+- Removed em-dashes throughout the documentation and report output.
 
-## [0.1.0] — 2026-06-10
+## [2.0.0] - 2026-06-11
+
+This is a **method change**, not a backward-compatible revision. 2.0.0 replaces
+the sequential-CART synthesiser of 1.0.0 with the **profile-based pipeline**, in
+which the synthesiser never reads the real microdata.
 
 ### Added
-- Sequential CART synthesis engine (`oissyntheticdata.synthesize`) in the synthpop
-  tradition: column-by-column synthesis, marginal draw for the first column,
-  CART-with-donor-leaves for each subsequent column conditioned on the columns
-  already synthesized.
-- Pure-Python classification and regression trees (`oissyntheticdata._tree`) — no numpy
-  or scikit-learn.
-- Standard-library CSV and XLSX reading and CSV writing (`oissyntheticdata._io`).
-- Confidentiality controls: `min_leaf` (k-record floor on every leaf and
-  marginal cell), optional `smoothing` of continuous donors, and `drop` for
-  excluding direct identifiers.
-- Command-line interface: `python -m oissyntheticdata input.(csv|xlsx) -o out.csv`.
-- One-call helper `oissyntheticdata.synthesize_file`.
-- Test suite (`tests/test_synth.py`, stdlib `unittest`).
+- Four-stage pipeline: `add-month` (00), `profile` (01), `synthesize` (02),
+  `compare` (03), available as a CLI (`oissyntheticdata <stage>` / `oissd`), as
+  an importable API (`oissyntheticdata.profile/synthesize/compare`), and as
+  self-contained zero-install scripts in `scripts/`.
+- Disclosure-controlled profile (stage 01): robust numeric bounds (P1/P99),
+  k-suppression of rare categorical levels (default k=5), identifier format
+  signatures, and group-size distributions for fan-out keys.
+- Synthesis from the profile only (stage 02), including seasonal dates, forced
+  appearance of every category (incl. rare), and shared relational key pools so
+  cross-file joins line up.
+- Inside-only fidelity control (stage 03): `kappa*`, `1 - KS`, signature
+  agreement, group-size agreement, and cross-file referential integrity.
+- `tools/build_standalone.py` regenerates the standalone scripts from the
+  package, keeping a single source of truth; `tests/test_roundtrip.py` enforces
+  package == standalone-script equivalence.
 
-[1.0.0]: https://github.com/yohananouaknine/oissyntheticdata/releases/tag/v1.0.0
-[0.2.0]: https://github.com/yohananouaknine/oissyntheticdata/releases/tag/v0.2.0
-[0.1.0]: https://github.com/yohananouaknine/oissyntheticdata/releases/tag/v0.1.0
+### Changed
+- Synthesiser no longer reads the confidential microdata. The only artefact that
+  leaves the secure environment is the disclosure-controlled profile.
+- Paper, citation metadata and documentation rewritten to describe the
+  profile-based method.
+
+### Notes
+- Zero third-party runtime dependencies (standard library only), unchanged.
+- New release is a new version under the existing Zenodo concept record.
+
+## [1.0.0] - 2026-06-10
+- Initial release: zero-dependency sequential CART synthesis (synthpop
+  tradition) with relational support.
