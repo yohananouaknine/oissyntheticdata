@@ -106,7 +106,10 @@ from the synthetic parent keys; and each child's columns are synthesized
 *conditioned on its parent's synthetic attributes*. This preserves referential
 integrity, attribute-dependent fan-out, and parent-to-child correlation without
 materialising a real join. A single-parent DAG (star, snowflake, chains) is
-supported; many-to-many and compound keys are deliberately out of scope.
+supported; many-to-many and compound keys are deliberately out of scope and are
+rejected at validation time with an explicit error (a `NotImplementedError` for
+compound keys and many-to-many links — detected as a non-unique parent key — and a
+`ValueError` for missing or dangling references) rather than failing silently.
 
 **Build on, don't reinvent.** The estimator is the established CART-synthesis
 method; the new work is the dependency-free, auditable, relational realisation for
@@ -148,9 +151,10 @@ parent attribute, and a parent-to-child relationship is preserved.
 # Development, governance, and contributions
 
 `oissyntheticdata` is developed in the open under the MIT license, with versioned
-releases, a changelog, a citation file, public issue tracking, and a contributing
-guide. Maintenance and decision responsibilities are stated in the repository, and
-the design rationale lives in the user-facing documentation.
+releases archived on Zenodo (DOI: 10.5281/zenodo.20632933), a changelog, a citation
+file, public issue tracking, and a contributing guide. Maintenance and decision
+responsibilities are stated in the repository, and the design rationale lives in the
+user-facing documentation.
 
 # Generative AI disclosure
 

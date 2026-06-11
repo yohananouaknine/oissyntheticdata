@@ -6,6 +6,33 @@ All notable changes to `oissyntheticdata` are documented here. This project foll
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-06-11
+
+First stable release. Marks the public API (`synthesize`, `synthesize_relational`,
+the CLI, and the confidentiality parameters) as stable and supported. No functional
+change from the 0.2.1 pre-review hardening below; this release promotes the project
+to 1.0 to reflect its production use and documented, tested, stable interface.
+
+## [0.2.1] — 2026-06-11
+
+### Changed (JOSS pre-review hardening)
+- `_tree.py` (the from-scratch CART) rewritten for auditability: thorough
+  explanatory comments throughout, and the recursive builder now receives its
+  predictor columns explicitly instead of via module-level global state.
+- Relational synthesis now **validates the schema up front** and fails with a clear,
+  specific error on out-of-scope input — `NotImplementedError` for compound keys and
+  many-to-many links (detected as a non-unique parent key), `ValueError` for missing
+  or dangling key/parent references — instead of failing silently.
+- `paper.bib`: the forthcoming Shalit-deal study marked precisely as *in press*.
+- Added the Zenodo archive DOI (10.5281/zenodo.20632933) to the paper, README, and
+  citation file; documented the out-of-scope error behaviour in the docs.
+
+### Added
+- Tests for the relational validation errors (compound key, missing foreign key,
+  unknown parent, non-unique parent key).
+
+
+
 ### Added / Changed (documentation & process; no code change)
 - Rebranded the package to **oissyntheticdata** (an OIS tool, https://ois.co.il),
   maintained by Dr Yohanan Ouaknine (ORCID 0000-0002-4186-7351).
@@ -58,5 +85,6 @@ All notable changes to `oissyntheticdata` are documented here. This project foll
 - One-call helper `oissyntheticdata.synthesize_file`.
 - Test suite (`tests/test_synth.py`, stdlib `unittest`).
 
+[1.0.0]: https://github.com/yohananouaknine/oissyntheticdata/releases/tag/v1.0.0
 [0.2.0]: https://github.com/yohananouaknine/oissyntheticdata/releases/tag/v0.2.0
 [0.1.0]: https://github.com/yohananouaknine/oissyntheticdata/releases/tag/v0.1.0

@@ -108,3 +108,38 @@ class TestRelational(unittest.TestCase):
         for fk, off in zip(jc["prisoner_id"], jc["offense"]):
             if vmap.get(fk) == "1":
                 self.assertEqual(off, "assault")
+
+    def test_out_of_scope_relational_raises_clearly(self):
+        import oissyntheticdata
+        inm, ju = self._build()
+
+        # compound primary key -> NotImplementedError
+        with self.assertRaises(NotImplementedError):
+            oissyntheticdata.synthesize_relational(
+                {"inmates": inm, "judgements": ju},
+                schema={"inmates": {"key": ["prisoner_id", "sector"]},
+                        "judgements": {"key": "judgement_id",
+                                       "parent": "inmates", "foreign_key": "prisoner_id"}})
+
+        # missing foreign_key on a child -> ValueError
+        with self.assertRaises(ValueError):
+            oissyntheticdata.synthesize_relational(
+                {"inmates": inm, "judgements": ju},
+                schema={"inmates": {"key": "prisoner_id"},
+                        "judgements": {"key": "judgement_id", "parent": "inmates"}})
+
+        # unknown parent -> ValueError
+        with self.assertRaises(ValueError):
+            oissyntheticdata.synthesize_relational(
+                {"inmates": inm, "judgements": ju},
+                schema={"inmates": {"key": "prisoner_id"},
+                        "judgements": {"key": "judgement_id",
+                                       "parent": "nope", "foreign_key": "prisoner_id"}})
+
+        # non-unique parent key (many-to-many signal) -> NotImplementedError
+        with self.assertRaises(NotImplementedError):
+            oissyntheticdata.synthesize_relational(
+                {"inmates": inm, "judgements": ju},
+                schema={"inmates": {"key": "sector"},          # sector is not unique
+                        "judgements": {"key": "judgement_id",
+                                       "parent": "inmates", "foreign_key": "prisoner_id"}})

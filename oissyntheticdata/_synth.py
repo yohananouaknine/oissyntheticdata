@@ -111,9 +111,9 @@ def synth_core(real, is_num, visit, n, rng, fixed_real=None, fixed_synth=None,
             donors = [v for v in real[c] if v is not None] if is_num[c] else real[c]
             out[c] = _marginal_draw(donors if donors else real[c], n, min_leaf, rng)
         else:
-            _tree.set_predictors({p: (fixed_real[p] if p in fixed_real else real[p]) for p in preds})
+            pred = {p: (fixed_real[p] if p in fixed_real else real[p]) for p in preds}
             idx = list(range(n_real))
-            root = _tree.build_tree(idx, real[c], preds, is_num, target_kind,
+            root = _tree.build_tree(idx, real[c], preds, pred, is_num, target_kind,
                                     min_leaf=min_leaf, max_depth=max_depth)
             col_out = []
             for i in range(n):

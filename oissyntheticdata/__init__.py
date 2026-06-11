@@ -28,7 +28,7 @@ from ._io import read_table, write_table
 from ._synth import synthesize
 from ._relational import synthesize_relational, synthesize_relational_files
 
-__version__ = "0.2.0"
+__version__ = "1.0.0"
 __all__ = [
     "read_table", "write_table", "synthesize", "synthesize_file",
     "synthesize_relational", "synthesize_relational_files",

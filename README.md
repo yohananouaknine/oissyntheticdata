@@ -5,6 +5,8 @@
 > An **OIS** tool · [ois.co.il](https://ois.co.il) · maintained by Dr Yohanan Ouaknine
 > ([ORCID 0000-0002-4186-7351](https://orcid.org/0000-0002-4186-7351))
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20632933.svg)](https://doi.org/10.5281/zenodo.20632933)
+
 `oissyntheticdata` generates a synthetic copy of a sensitive dataset that preserves the
 *relationships between variables*, not just each column's marginal shape. It is
 built for the secure-research workflow used by statistical agencies: **develop
@@ -209,7 +211,9 @@ and parent → child → grandchild chains.
   what you take off-site.
 - Relational synthesis covers a single-parent DAG (star / snowflake / chains).
   Many-to-many relationships and compound keys are not modelled — pre-join or
-  pre-resolve them to a surrogate key first.
+  pre-resolve them to a surrogate key first. Such inputs are rejected up front with
+  a clear error (`NotImplementedError` for compound keys and many-to-many links,
+  `ValueError` for missing or dangling references), never handled silently.
 - CART captures pairwise/low-order structure well; very high-order interactions
   and exact arithmetic identities (e.g. `rate = a/b`) are not enforced.
 - Pure Python: comfortable to a few thousand rows × a few dozen columns; larger
@@ -236,7 +240,8 @@ and parent → child → grandchild chains.
 Dr **Yohanan Ouaknine** — OIS ([ois.co.il](https://ois.co.il)),
 [yohanan.ouaknine@ois.co.il](mailto:yohanan.ouaknine@ois.co.il),
 [ORCID 0000-0002-4186-7351](https://orcid.org/0000-0002-4186-7351).
-formerly Head of the Research Branch, Israel Prison Service.
+Department of Criminology, Ashkelon Academic College; formerly Head of the
+Research Branch, Israel Prison Service.
 
 ## License
 
@@ -244,4 +249,9 @@ MIT — see `LICENSE`.
 
 ## Citation
 
-If you use `oissyntheticdata`, please cite this software (see `CITATION.cff`)  
+If you use `oissyntheticdata`, please cite this software (see `CITATION.cff`;
+archived at [doi:10.5281/zenodo.20632933](https://doi.org/10.5281/zenodo.20632933))
+and the methodological lineage above (Reiter 2005; Nowok, Raab & Dibben 2016). The
+method was first applied in Ouaknine, Elisha & Hasisi (2026), *The Effect of Mass
+Prisoner Release on Terrorist Recidivism: A Propensity Score Analysis of the Shalit
+Deal* (in press).
