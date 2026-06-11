@@ -29,7 +29,7 @@ IMPORTS = [
 STAGES = {
     "00_add_month.py": dict(module="add_month.py", stage="00",
         runner='cli_main(input_file=(sys.argv[1] if len(sys.argv) > 1 else None), base_dir=os.getcwd())'),
-    "01_profile.py": dict(module="profile.py", stage="01",
+    "01_profile.py": dict(module="profile.py", stage="01", extra=["relational.py"],
         runner='run_profile(base_dir=os.getcwd())'),
     "02_synthesize.py": dict(module="synthesize.py", stage="02",
         runner='run_synthesize(run_dir=(sys.argv[1] if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]) else None), base_dir=os.getcwd())'),
@@ -72,6 +72,10 @@ def build(script_name, spec):
     common = strip_imports_and_docstring(open(os.path.join(SRC, "_common.py"), encoding="utf-8").read())
     io = strip_imports_and_docstring(open(os.path.join(SRC, "_io.py"), encoding="utf-8").read())
     stage = strip_imports_and_docstring(open(os.path.join(SRC, spec["module"]), encoding="utf-8").read())
+    extras = []
+    for m in spec.get("extra", []):
+        body = strip_imports_and_docstring(open(os.path.join(SRC, m), encoding="utf-8").read())
+        extras.append("\n# ---- from oissyntheticdata.%s ----\n%s" % (m[:-3], body))
     parts = [
         HEADER % spec["stage"],
         "\n".join(IMPORTS),
@@ -80,6 +84,7 @@ def build(script_name, spec):
         common,
         "\n# ---- from oissyntheticdata._io ----",
         io,
+        "".join(extras),
         "\n# ---- stage %s ----" % spec["stage"],
         stage,
         "\nif __name__ == \"__main__\":",

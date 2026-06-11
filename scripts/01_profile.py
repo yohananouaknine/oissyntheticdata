@@ -257,6 +257,185 @@ def write_csv(path, header, row_iter):
         for row in row_iter:
             w.writerow(row)
 
+# ---- from oissyntheticdata.relational ----
+def _nonmissing(rows, c):
+    return [r.get(c, "") for r in rows if not is_missing(r.get(c, ""))]
+
+
+def _is_unique(rows, c):
+    vals = _nonmissing(rows, c)
+    return len(vals) > 0 and len(set(vals)) == len(vals)
+
+
+def _determines(rows, a, b):
+    """Does column a functionally determine column b (group by a -> constant b)?"""
+    seen = {}
+    for r in rows:
+        av = r.get(a, "")
+        if is_missing(av):
+            continue
+        bv = r.get(b, "")
+        if av in seen:
+            if seen[av] != bv:
+                return False
+        else:
+            seen[av] = bv
+    return True
+
+
+def _fanout(rows, link_col, grid=QUANTILE_GRID, robust=USE_ROBUST_BOUNDS):
+    """Distribution of children per parent (group sizes) as robust quantiles."""
+    counts = {}
+    for r in rows:
+        v = r.get(link_col, "")
+        if is_missing(v):
+            continue
+        counts[v] = counts.get(v, 0) + 1
+    sizes = sorted(counts.values())
+    g = list(grid)
+    q = [percentile(sizes, p) for p in g]
+    if robust and sizes:
+        q[0] = percentile(sizes, P_LOW)
+        q[-1] = percentile(sizes, P_HIGH)
+    return g, [round(x, 6) for x in q], len(counts)
+
+
+def _own_key(header, uniqmap):
+    uniques = [c for c in header if uniqmap.get(c)]
+    if not uniques:
+        return None
+    for c in uniques:
+        cl = c.lower()
+        if cl in ("id", "url") or cl.endswith(("_id", "_key", "_code")):
+            return c
+    return uniques[0]
+
+
+def _topo(files):
+    children = {b: [] for b in files}
+    indeg = {b: 0 for b in files}
+    for b, e in files.items():
+        p = e["parent"]
+        if p:
+            children[p].append(b)
+            indeg[b] += 1
+    q = sorted(b for b in files if indeg[b] == 0)
+    order = []
+    while q:
+        b = q.pop(0)
+        order.append(b)
+        for c in sorted(children[b]):
+            indeg[c] -= 1
+            if indeg[c] == 0:
+                q.append(c)
+        q.sort()
+    for b in files:                       # any leftover (defensive: cycles)
+        if b not in order:
+            order.append(b)
+    return order
+
+
+def _all_int(values):
+    if not values:
+        return False
+    for v in values:
+        try:
+            int(str(v))
+        except (ValueError, TypeError):
+            return False
+    return True
+
+
+def detect_schema(tables):
+    """tables: {base: {"file": name, "header": [...], "rows": [dict, ...]}}.
+
+    Returns {"files": {base: {parent, link, inherited, key, fanout_*}}, "order": [...]}.
+    """
+    bases = list(tables)
+    uniq, valset, header = {}, {}, {}
+    for b, t in tables.items():
+        header[b] = t["header"]
+        uniq[b], valset[b] = {}, {}
+        for c in t["header"]:
+            vals = _nonmissing(t["rows"], c)
+            valset[b][c] = set(vals)
+            uniq[b][c] = (len(vals) > 0 and len(set(vals)) == len(vals))
+
+    def own(b):
+        return _own_key(header[b], uniq[b])
+
+    # 1:many links are unambiguous; 1:1 links (col unique in both) need a direction
+    edges = {b: [] for b in bases}        # child -> list of (col, parent)
+    one_to_one, seen_pair = [], set()
+    for b in bases:
+        for p in bases:
+            if p == b:
+                continue
+            for c in header[b]:
+                if c not in header[p]:
+                    continue
+                bv, pv = valset[b][c], valset[p][c]
+                if not bv or not pv:
+                    continue
+                if uniq[p][c] and not uniq[b][c] and bv <= pv:
+                    edges[b].append((c, p))                 # b is the many side
+                elif uniq[p][c] and uniq[b][c] and bv == pv:
+                    key = (min(b, p), max(b, p), c)
+                    if key not in seen_pair:
+                        seen_pair.add(key)
+                        one_to_one.append((b, p, c))
+
+    # resolve 1:1 direction: child = file with more other parents; then the file
+    # whose own key is NOT this column; then a deterministic name order
+    for a, bb, c in one_to_one:
+        da, db = len(edges[a]), len(edges[bb])
+        if da != db:
+            child, parent = (a, bb) if da > db else (bb, a)
+        elif (own(a) == c) != (own(bb) == c):
+            child, parent = (a, bb) if own(a) != c else (bb, a)
+        else:
+            child, parent = max(a, bb), min(a, bb)
+        edges[child].append((c, parent))
+
+    files = {}
+    for b in bases:
+        links = edges[b]
+        if not links:
+            files[b] = {"file": tables[b]["file"], "parent": None, "link": None,
+                        "inherited": [], "key": own(b),
+                        "fanout_grid": None, "fanout_quantiles": None}
+            continue
+        # primary parent = link column with the most distinct values here (finest
+        # grain); on a tie prefer an integer key, which synthesizes uniquely and
+        # so keeps a parent join unambiguous
+        primary_c, primary_p = max(
+            links, key=lambda cp: (len(valset[b][cp[0]]), _all_int(valset[b][cp[0]])))
+        phead = set(header[primary_p])
+        inherited = [c for c in header[b]
+                     if c != primary_c and c in phead
+                     and not (c.endswith("_month") and c[:-6] in header[b])
+                     and _determines(tables[b]["rows"], primary_c, c)]
+        g, q, _ = _fanout(tables[b]["rows"], primary_c)
+        files[b] = {"file": tables[b]["file"], "parent": primary_p, "link": primary_c,
+                    "inherited": inherited, "key": own(b),
+                    "fanout_grid": g, "fanout_quantiles": q}
+
+    return {"files": files, "order": _topo(files)}
+
+
+def schema_lines(schema):
+    """Human-readable summary of the detected relationships."""
+    lines = []
+    for b in schema["order"]:
+        e = schema["files"][b]
+        if e["parent"]:
+            extra = (" inheriting " + ", ".join(e["inherited"])) if e["inherited"] else ""
+            lines.append("%s -> %s on %s%s" % (b, e["parent"], e["link"], extra))
+        else:
+            key = (" (key %s)" % e["key"]) if e["key"] else ""
+            lines.append("%s: root%s" % (b, key))
+    return lines
+
 # ---- stage 01 ----
 def augment_with_months(header, rows):
     """Insert a derived '<datecol>_month' column (1-12) after each date column."""
@@ -409,7 +588,7 @@ def profile_column(name, values,
     return col
 
 
-def profile_file(path, run_dir, add_month=True, **cfg):
+def _profile_one(path, run_dir, add_month=True, **cfg):
     header, rows = load_table(path)
     if add_month:
         header = augment_with_months(header, rows)
@@ -425,7 +604,11 @@ def profile_file(path, run_dir, add_month=True, **cfg):
               "columns": columns}
     with open(os.path.join(run_dir, "profile_%s.json" % base), "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    return report
+    return report, base, {"file": os.path.basename(path), "header": header, "rows": rows}
+
+
+def profile_file(path, run_dir, add_month=True, **cfg):
+    return _profile_one(path, run_dir, add_month=add_month, **cfg)[0]
 
 
 def summary_block(report):
@@ -489,18 +672,26 @@ def run_profile(inputs=None, base_dir=".", run_dir=None, add_month=True,
     paths = [p if os.path.isabs(p) else os.path.join(base_dir, p) for p in paths]
     if run_dir is None:
         run_dir = new_run_dir(base_dir)
-    reports = [profile_file(p, run_dir, add_month=add_month, **cfg) for p in paths]
+    reports, tables = [], {}
+    for p in paths:
+        report, base, table = _profile_one(p, run_dir, add_month=add_month, **cfg)
+        reports.append(report)
+        tables[base] = table
     shared = detect_shared_keys(reports)
+
+    schema = detect_schema(tables) if len(tables) > 1 else {"files": {}, "order": list(tables)}
+    with open(os.path.join(run_dir, "schema.json"), "w", encoding="utf-8") as f:
+        json.dump(schema, f, ensure_ascii=False, indent=2)
+    rels = schema_lines(schema) if any(e.get("parent") for e in schema["files"].values()) else []
 
     md = ["# Profiles (%d file%s)" % (len(reports), "" if len(reports) == 1 else "s"),
           "- Generated: %s" % datetime.datetime.now().isoformat(timespec="seconds"),
           "- Protections: min cell count = %d, robust bounds = %s"
           % (cfg.get("min_cell_count", MIN_CELL_COUNT),
              cfg.get("use_robust", USE_ROBUST_BOUNDS))]
-    if shared:
-        md.append("- **Shared relational keys detected:** " +
-                  ", ".join("`%s` (%s)" % (k, ", ".join("%s:%s" % (b, kd) for b, kd in v))
-                            for k, v in shared.items()))
+    if rels:
+        md.append("- **Detected relationships:**")
+        md += ["    - %s" % r for r in rels]
     md.append("")
     for rep in reports:
         md += summary_block(rep) + [""]
@@ -512,8 +703,10 @@ def run_profile(inputs=None, base_dir=".", run_dir=None, add_month=True,
         for rep in reports:
             print("[OK] Profiled %s -> %s/profile_%s.json"
                   % (rep["source_file"], rel, rep["base"]))
-        if shared:
-            print("     Shared relational keys: %s" % ", ".join(shared))
+        if rels:
+            print("     Detected relationships:")
+            for r in rels:
+                print("       %s" % r)
         print("     All outputs in: %s" % rel)
         print("     Metadata only - safe to take off-site (feed this folder to 02).")
     return run_dir, reports

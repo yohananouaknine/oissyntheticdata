@@ -29,6 +29,7 @@ from ._common import (
     month_of, mean, std_dev, percentile, new_run_dir,
 )
 from ._io import load_table
+from .relational import detect_schema, schema_lines
 
 
 def augment_with_months(header, rows):
@@ -182,7 +183,7 @@ def profile_column(name, values,
     return col
 
 
-def profile_file(path, run_dir, add_month=True, **cfg):
+def _profile_one(path, run_dir, add_month=True, **cfg):
     header, rows = load_table(path)
     if add_month:
         header = augment_with_months(header, rows)
@@ -198,7 +199,11 @@ def profile_file(path, run_dir, add_month=True, **cfg):
               "columns": columns}
     with open(os.path.join(run_dir, "profile_%s.json" % base), "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    return report
+    return report, base, {"file": os.path.basename(path), "header": header, "rows": rows}
+
+
+def profile_file(path, run_dir, add_month=True, **cfg):
+    return _profile_one(path, run_dir, add_month=add_month, **cfg)[0]
 
 
 def summary_block(report):
@@ -262,18 +267,26 @@ def run_profile(inputs=None, base_dir=".", run_dir=None, add_month=True,
     paths = [p if os.path.isabs(p) else os.path.join(base_dir, p) for p in paths]
     if run_dir is None:
         run_dir = new_run_dir(base_dir)
-    reports = [profile_file(p, run_dir, add_month=add_month, **cfg) for p in paths]
+    reports, tables = [], {}
+    for p in paths:
+        report, base, table = _profile_one(p, run_dir, add_month=add_month, **cfg)
+        reports.append(report)
+        tables[base] = table
     shared = detect_shared_keys(reports)
+
+    schema = detect_schema(tables) if len(tables) > 1 else {"files": {}, "order": list(tables)}
+    with open(os.path.join(run_dir, "schema.json"), "w", encoding="utf-8") as f:
+        json.dump(schema, f, ensure_ascii=False, indent=2)
+    rels = schema_lines(schema) if any(e.get("parent") for e in schema["files"].values()) else []
 
     md = ["# Profiles (%d file%s)" % (len(reports), "" if len(reports) == 1 else "s"),
           "- Generated: %s" % datetime.datetime.now().isoformat(timespec="seconds"),
           "- Protections: min cell count = %d, robust bounds = %s"
           % (cfg.get("min_cell_count", MIN_CELL_COUNT),
              cfg.get("use_robust", USE_ROBUST_BOUNDS))]
-    if shared:
-        md.append("- **Shared relational keys detected:** " +
-                  ", ".join("`%s` (%s)" % (k, ", ".join("%s:%s" % (b, kd) for b, kd in v))
-                            for k, v in shared.items()))
+    if rels:
+        md.append("- **Detected relationships:**")
+        md += ["    - %s" % r for r in rels]
     md.append("")
     for rep in reports:
         md += summary_block(rep) + [""]
@@ -285,8 +298,10 @@ def run_profile(inputs=None, base_dir=".", run_dir=None, add_month=True,
         for rep in reports:
             print("[OK] Profiled %s -> %s/profile_%s.json"
                   % (rep["source_file"], rel, rep["base"]))
-        if shared:
-            print("     Shared relational keys: %s" % ", ".join(shared))
+        if rels:
+            print("     Detected relationships:")
+            for r in rels:
+                print("       %s" % r)
         print("     All outputs in: %s" % rel)
         print("     Metadata only - safe to take off-site (feed this folder to 02).")
     return run_dir, reports

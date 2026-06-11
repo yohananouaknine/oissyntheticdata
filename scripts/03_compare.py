@@ -257,6 +257,7 @@ def write_csv(path, header, row_iter):
         for row in row_iter:
             w.writerow(row)
 
+
 # ---- stage 03 ----
 SYNTH_FILE = "synthetic_data.csv"
 FLAG_BELOW = 0.80                 # agreement below this = "review before rerun"
@@ -444,6 +445,58 @@ def compare_one(real_path, run_dir):
     return base, fidelity, recs
 
 
+def schema_integrity(run_dir):
+    """Schema-driven referential integrity and within-row pairing on the synthetic
+    data. Handles links that are not id-named (which the kind-based check misses)
+    and verifies that inherited keys match their parent row."""
+    p = os.path.join(run_dir, "schema.json")
+    if not os.path.exists(p):
+        return []
+    with open(p, encoding="utf-8") as f:
+        schema = json.load(f)
+    files = schema.get("files", {})
+    cache = {}
+
+    def load(base):
+        if base not in cache:
+            sp = os.path.join(run_dir, "synthetic_%s.csv" % base)
+            cache[base] = load_columns(sp) if os.path.exists(sp) else None
+        return cache[base]
+
+    lines = []
+    for base in schema.get("order", list(files)):
+        e = files.get(base, {})
+        parent, link = e.get("parent"), e.get("link")
+        if not parent or not link:
+            continue
+        cc, pc = load(base), load(parent)
+        if not cc or not pc or link not in cc or link not in pc:
+            continue
+        pset = set(v for v in pc[link] if not is_missing(v))
+        cvals = [v for v in cc[link] if not is_missing(v)]
+        orphan = sum(1 for v in cvals if v not in pset)
+        pct = 100.0 * orphan / max(len(cvals), 1)
+        lines.append("- `%s` -> `%s` on `%s`: %s (%d orphan keys, %.1f%%)"
+                     % (base, parent, link, "OK" if orphan == 0 else "BROKEN", orphan, pct))
+        pmap = {}
+        for i, k in enumerate(pc[link]):
+            if not is_missing(k):
+                pmap.setdefault(k, i)
+        for c in (e.get("inherited") or []):
+            if c not in cc or c not in pc or c.endswith("_month"):
+                continue
+            ok = tot = 0
+            for j, k in enumerate(cc[link]):
+                if k in pmap:
+                    tot += 1
+                    if cc[c][j] == pc[c][pmap[k]]:
+                        ok += 1
+            p2 = 100.0 * ok / max(tot, 1)
+            lines.append("    - within-row pairing `%s` inherited from `%s`: %s (%.1f%% consistent)"
+                         % (c, parent, "OK" if ok == tot else "PARTIAL", p2))
+    return lines
+
+
 def referential_integrity(reals, run_dir):
     KEY_KINDS = ("identifier_unique", "identifier_group", "id_or_text")
     synth_cols, keykind = {}, {}
@@ -530,7 +583,7 @@ def run_compare(run_dir=None, base_dir=".", reals=None, quiet=False):
                        % (r["column"], r["method"], ag, r["missing_drift"], r["note"]))
         blocks.append("\n".join(blk))
 
-    ri = referential_integrity(reals, run_dir)
+    ri = schema_integrity(run_dir) or referential_integrity(reals, run_dir)
 
     md = ["# Fidelity comparison (per file)",
           "Agreement: kappa* for categorical, 1 - KS for numeric/date, structural for keys.",

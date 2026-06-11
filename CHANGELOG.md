@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - 2026-06-11
+
+Major release: relational synthesis with auto-detected schema and within-row key pairing.
+
+### Added
+- Automatic relationship detection (stage 01) by value-inclusion: a shared column
+  is treated as a link only when one file holds it uniquely (parent) and another
+  file's values are a repeating subset (child). Type-agnostic, so integer, string,
+  and date keys are all found, and shared attribute columns are correctly ignored.
+- Relational synthesis (stage 02): each child row is attached to a real synthetic
+  parent row; the link column and any inherited columns are copied from that parent.
+  This gives referential integrity, realistic fan-out, and exact within-row key
+  pairing at once (for example, a judgement's incident now belongs to that
+  judgement's prisoner). Supports both the hierarchical ("deterrence") model and the
+  simple shared-id ("merge by grouping") model.
+- Detected schema is written to schema.json (names and fan-out quantiles only,
+  disclosure-safe) and printed in stage 01.
+- Stage 03 reports schema-driven referential integrity and within-row pairing,
+  including links that are not id-named.
+
+### Changed
+- Single-file and no-relationship runs are unchanged (same output as before).
+
 ## [2.1.0] - 2026-06-11
 
 Documentation and metadata corrections. No change to the synthesis or profiling

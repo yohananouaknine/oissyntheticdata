@@ -302,6 +302,141 @@ def generate_file(report, pools, run_dir,
     return out_name, n, len(header)
 
 
+def _load_schema(run_dir):
+    p = os.path.join(run_dir, "schema.json")
+    if os.path.exists(p):
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
+def _sample_column(col, n, inject_edges, month_dist):
+    name, kind = col["name"], col["kind"]
+    if kind in ("integer", "float"):
+        return sample_numeric(col, n, inject_edges)
+    if kind in ("categorical", "boolean"):
+        return sample_categorical(col, n, inject_edges)
+    if kind == "datetime":
+        if name in month_dist or col.get("year_freqs"):
+            return sample_seasonal_datetime(col, month_dist.get(name), n)
+        return sample_datetime(col, n)
+    if kind == "id_or_text":
+        return sample_id(col, n)
+    if kind == "identifier_unique":
+        return sample_identifier_unique(col, n)
+    if kind == "identifier_group":
+        return sample_identifier_group(col, n)
+    return [""] * n
+
+
+def _attach_indices(n, n_parents, grid, quantiles):
+    """Assign n child rows to parent row indices; fan-out follows the real
+    group-size distribution, and a parent may receive zero children."""
+    if n_parents <= 0:
+        return [0] * n
+    if quantiles:
+        g = [x / 100.0 for x in grid]
+        sizes = [max(0, int(round(inv_cdf(g, quantiles, random.random()))))
+                 for _ in range(n_parents)]
+    else:
+        sizes = [1] * n_parents
+    total = sum(sizes)
+    if total <= 0:
+        sizes = [1] * n_parents
+        total = n_parents
+    scaled = [int(round(s * n / total)) for s in sizes]
+    diff = n - sum(scaled)
+    while diff != 0:
+        i = random.randrange(n_parents)
+        if diff > 0:
+            scaled[i] += 1
+            diff -= 1
+        elif scaled[i] > 0:
+            scaled[i] -= 1
+            diff += 1
+    idx = []
+    for i, s in enumerate(scaled):
+        idx.extend([i] * s)
+    idx = idx[:n]
+    while len(idx) < n:
+        idx.append(random.randrange(n_parents))
+    random.shuffle(idx)
+    return idx
+
+
+def generate_relational(reports, schema, run_dir,
+                        row_multiplier=DEFAULT_ROW_MULTIPLIER,
+                        inject_edges=DEFAULT_INJECT_EDGES):
+    """Synthesize files in topological order. A child row is attached to a real
+    synthetic parent row; its link column and any inherited columns are copied
+    from that parent, giving referential integrity, realistic fan-out, and exact
+    within-row key pairing at once."""
+    files = schema["files"]
+    by_base = {r.get("base", "data"): r for r in reports}
+    synth, outputs = {}, []
+    for base in schema["order"]:
+        rep = by_base.get(base)
+        if rep is None:
+            continue
+        entry = files.get(base, {"parent": None, "link": None, "inherited": []})
+        parent, link = entry.get("parent"), entry.get("link")
+        inherited = set(entry.get("inherited") or [])
+        n = max(1, int(round(rep["n_rows"] * row_multiplier)))
+        header = [c["name"] for c in rep["columns"]]
+        by_name = {c["name"]: c for c in rep["columns"]}
+        datetime_names = {c["name"] for c in rep["columns"] if c["kind"] == "datetime"}
+
+        month_dist, derived_month = {}, {}
+        for c in rep["columns"]:
+            if c["name"].endswith("_month") and c["name"][:-6] in datetime_names \
+                    and c["kind"] in ("categorical", "boolean"):
+                b = c["name"][:-6]
+                freqs = {k: v for k, v in c["frequencies"].items()
+                         if not str(k).startswith("RARE_")}
+                if freqs:
+                    month_dist[b] = freqs
+                derived_month[c["name"]] = b
+
+        attach = None
+        if parent is not None and parent in synth:
+            attach = _attach_indices(n, synth[parent]["n"],
+                                     entry.get("fanout_grid"), entry.get("fanout_quantiles"))
+
+        cols = {}
+        for col in rep["columns"]:
+            name = col["name"]
+            if name in derived_month:
+                continue
+            from_parent = attach is not None and (name == link or name in inherited)
+            if from_parent:
+                src = synth[parent]["cols"].get(name)
+                if src is not None:
+                    cols[name] = [src[attach[i]] for i in range(n)]
+                    continue
+            vals = _sample_column(col, n, inject_edges, month_dist)
+            cols[name] = vals if from_parent else apply_missing(vals, col.get("missing_rate", 0.0))
+
+        for mname, b in derived_month.items():
+            fmt = by_name[b].get("format", "%Y-%m-%d")
+            out = []
+            for v in cols.get(b, [""] * n):
+                try:
+                    out.append(str(datetime.datetime.strptime(v, fmt).month))
+                except (ValueError, TypeError):
+                    out.append("")
+            cols[mname] = out
+
+        out_name = "synthetic_%s.csv" % base
+        with open(os.path.join(run_dir, out_name), "w", encoding="utf-8", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(header)
+            for i in range(n):
+                w.writerow([cols[h][i] for h in header])
+        synth[base] = {"cols": cols, "n": n}
+        outputs.append((rep["source_file"], out_name, n, len(header)))
+    return outputs
+
+
 def run_synthesize(run_dir=None, base_dir=".", seed=DEFAULT_SEED,
                    row_multiplier=DEFAULT_ROW_MULTIPLIER,
                    inject_edges=DEFAULT_INJECT_EDGES, quiet=False):
@@ -312,6 +447,21 @@ def run_synthesize(run_dir=None, base_dir=".", seed=DEFAULT_SEED,
     reports = load_profiles(run_dir)
     if not reports:
         raise FileNotFoundError("No profile_*.json in %s. Run stage 01 first." % run_dir)
+    schema = _load_schema(run_dir)
+    relational = bool(schema and schema.get("files")
+                      and any(e.get("parent") for e in schema["files"].values()))
+    if relational:
+        outputs = generate_relational(reports, schema, run_dir,
+                                      row_multiplier=row_multiplier, inject_edges=inject_edges)
+        if not quiet:
+            for src, out_name, n, ncol in outputs:
+                print("[OK] %s -> %s  (%d rows x %d cols)" % (src, out_name, n, ncol))
+            print("     Relational synthesis: each child row was attached to a real synthetic")
+            print("     parent, so single-key joins, group-bys, and within-row key pairing hold.")
+            print("     Output folder: %s" % os.path.relpath(run_dir, base_dir))
+            print("     Develop & debug OFF-premises; take ONLY the final script back on-site.")
+        return run_dir, outputs
+
     pools = build_key_pools(reports)
     outputs = []
     for rep in reports:

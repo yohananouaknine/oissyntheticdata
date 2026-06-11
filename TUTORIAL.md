@@ -67,6 +67,14 @@ a p-value computed on synthetic data. Those come only from the real run inside.
 
 > Rule of thumb: develop on synthetic, **report from real**.
 
+> ## READ THIS FIRST
+> **The synthetic data is ONLY for testing that your code runs.** Do not analyse
+> it, do not run statistics or regressions on it, do not train models on it, and
+> do not report any number from it. The numbers are deliberately meaningless;
+> only their structure is real. If you run a regression here it will give you a
+> confident-looking answer that means nothing. Every reported result must come
+> from your finished code run on the real data, on-premises.
+
 ---
 
 ## 3. Setup (one minute)

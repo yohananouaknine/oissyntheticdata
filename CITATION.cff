@@ -8,7 +8,7 @@ authors:
     orcid: "https://orcid.org/0000-0002-4186-7351"
     email: "yohanan.ouaknine@ois.co.il"
     affiliation: "OIS (https://ois.co.il); formerly Head of the Research Branch, Israel Prison Service"
-version: "2.1.0"
+version: "2.2.0"
 doi: "10.5281/zenodo.20632932"
 date-released: "2026-06-11"
 license: MIT

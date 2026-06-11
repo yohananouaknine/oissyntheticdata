@@ -257,6 +257,7 @@ def write_csv(path, header, row_iter):
         for row in row_iter:
             w.writerow(row)
 
+
 # ---- stage 00 ----
 def add_month_file(path, out_path=None):
     """Write ``<name>_with_month.csv`` next to the input; return its path."""

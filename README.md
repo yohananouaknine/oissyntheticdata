@@ -18,6 +18,15 @@ on-premises and release only vetted aggregate results.
 > **New to this and just want to use it?** Start with the
 > [researcher tutorial](TUTORIAL.md), a plain-language, end-to-end walk-through.
 
+> ## READ THIS FIRST
+> **The synthetic data is ONLY for testing that your code runs.** It exists so
+> your script executes end to end: types line up, joins resolve, every category
+> and edge case appears, nothing throws an error. **Do not analyse it.** Do not
+> run statistics or regressions on it, do not fit or train models on it, and do
+> not report any number from it. The numbers are deliberately meaningless; only
+> their structure is real. Every result you report must come from running your
+> finished, unchanged code on the real data, on-premises.
+
 ```
    INSIDE (real data)            OUTSIDE (no real data)          INSIDE (control)
    ..................            ......................          ................
@@ -146,6 +155,37 @@ are children sharing `prisoner_id` and `incident_id`. The synthesizer mints one
 shared key pool per shared key, so synthetic child keys are a subset of the
 synthetic parent keys. `compare` reports referential integrity (orphan keys, if
 any) alongside per-column fidelity.
+
+## Rebuilding joined or merged files
+
+Stage 01 detects the relationships between your files from the data itself. A
+shared column is treated as a link only when one file holds it uniquely (the
+parent) and another file's values are a repeating subset of it (the child); this
+is type-agnostic, so integer keys, string ids, and dates are all found, and a
+column that merely shares a name but is a plain attribute is ignored. The
+detected schema is printed and written to `schema.json` (names and fan-out
+quantiles only, so it is disclosure-safe). If detection ever picks the wrong
+parent on an unusual schema, you can override it.
+
+Stage 02 then synthesizes in parent-before-child order and attaches each child
+row to a real synthetic parent, copying the link column and any inherited
+columns from that parent. This gives three things at once:
+
+- Referential integrity: every synthetic child key resolves to a synthetic
+  parent, so a group-by or a single-key join runs with zero orphan keys, and you
+  can rebuild a merged or aggregated table from the synthetic files exactly as
+  you would from the real ones.
+- Realistic fan-out: the number of children per parent follows the real
+  group-size distribution.
+- Within-row key pairing: when a child carries a second key that the real data
+  shows is fixed by its parent (for example a judgement's `prisoner_id` is fixed
+  once its `incident_id` is known), that key is inherited from the matched
+  parent, so the pairing is exact. A judgement's incident now belongs to that
+  judgement's prisoner, not just to some valid prisoner.
+
+This supports both the hierarchical model (files describing facets of one object,
+merged at synthesis time) and the simple shared-id model (several files that the
+research unit merges by grouping on a common id to check their interpretation).
 
 ## Confidentiality model
 

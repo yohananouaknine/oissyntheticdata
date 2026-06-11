@@ -46,6 +46,51 @@ def _make_data(d):
                 eid += 1
 
 
+def _make_hierarchy(d):
+    """grandparent (inmates) <- parent (incidents, inherits nothing) <- child
+    (judgements, links on incident_id and inherits prisoner_id)."""
+    random.seed(11)
+    with open(os.path.join(d, "inmates.csv"), "w", newline="") as f:
+        w = csv.writer(f); w.writerow(["prisoner_id", "city"])
+        for i in range(1, 81):
+            w.writerow([i, random.choice(["A", "B", "C"])])
+    iid = 1
+    inc_owner = {}
+    with open(os.path.join(d, "incidents.csv"), "w", newline="") as f:
+        w = csv.writer(f); w.writerow(["incident_id", "prisoner_id", "kind"])
+        for pid in range(1, 81):
+            for _ in range(random.randint(1, 5)):
+                inc_owner[iid] = pid
+                w.writerow([iid, pid, random.choice(["m", "n"])]); iid += 1
+    with open(os.path.join(d, "judgements.csv"), "w", newline="") as f:
+        w = csv.writer(f); w.writerow(["judgement_id", "incident_id", "prisoner_id", "result"])
+        jid = 1
+        for inc, pid in inc_owner.items():
+            w.writerow([jid, inc, pid, random.choice(["g", "a"])]); jid += 1
+
+
+def test_within_row_pairing(tmp_path):
+    """2.2: a judgement's incident must belong to that judgement's prisoner."""
+    import oissyntheticdata as oisd
+    _make_hierarchy(str(tmp_path))
+    run_dir, _ = oisd.profile(["inmates.csv", "incidents.csv", "judgements.csv"],
+                              base_dir=str(tmp_path), quiet=True)
+    oisd.synthesize(run_dir=run_dir, quiet=True)
+
+    def load(name):
+        with open(os.path.join(run_dir, "synthetic_%s.csv" % name), encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+    inm = {r["prisoner_id"] for r in load("inmates")}
+    inc = load("incidents")
+    inc_owner = {r["incident_id"]: r["prisoner_id"] for r in inc}
+    jud = load("judgements")
+    # referential integrity
+    assert all(r["prisoner_id"] in inm for r in inc)
+    assert all(r["incident_id"] in inc_owner for r in jud)
+    # within-row pairing: every judgement's incident points to its own prisoner
+    assert all(inc_owner[r["incident_id"]] == r["prisoner_id"] for r in jud)
+
+
 def _run_package(workdir):
     import oissyntheticdata as oisd
     run_dir, _ = oisd.profile(["parent.csv", "child.csv"], base_dir=workdir, quiet=True)

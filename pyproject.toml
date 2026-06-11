@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oissyntheticdata"
-version = "2.1.0"
+version = "2.2.0"
 description = "Profile-based synthetic data for secure research: a disclosure-safe profile crosses the boundary, the synthesizer never sees the real data. Zero dependencies. An OIS tool."
 readme = "README.md"
 requires-python = ">=3.7"

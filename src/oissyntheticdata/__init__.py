@@ -36,7 +36,7 @@ add-month|profile|synthesize|compare`` and as the standalone, zero-install
 scripts in ``scripts/`` (carry those into the secure environment).
 """
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 from .add_month import add_month_file, cli_main as _add_month_cli
 from .profile import run_profile as profile, profile_column, profile_file
