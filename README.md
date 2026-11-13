@@ -1,260 +1,189 @@
-# oissyntheticdata
+# oissyntheticdata (gov_one)
 
-**Profile-based synthetic data for secure research environments.**
-Zero third-party dependencies; Python standard library only.
+One file, `gov_one.py`. Python standard library only: no other package, no internet.
+Tested on Python 3.15 (Windows), on invented data only.
 
-> An **OIS** tool · [ois.co.il](https://ois.co.il) · maintained by Dr Yohanan Ouaknine
-> ([ORCID 0000-0002-4186-7351](https://orcid.org/0000-0002-4186-7351))
+It follows one flow, for any office whose data is a folder of Excel / CSV files:
+profile the folder on the premises → aggregate-only JSON leaves → synthetic files are rebuilt at home →
+you write your statistics script on them → the same script runs on the real files on the premises.
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20632932.svg)](https://doi.org/10.5281/zenodo.20632932)
-
-A sensitive dataset never leaves the secure environment. Instead, a
-**disclosure-safe profile** of it crosses the boundary, and the synthesizer
-rebuilds a structurally faithful *synthetic* copy **from the profile alone**, so
-it never sees the real data. You develop and debug your analysis off-site on the
-synthetic copy, then run the final, unchanged script on the real data
-on-premises and release only vetted aggregate results.
-
-> **New to this and just want to use it?** Start with the
-> [researcher tutorial](TUTORIAL.md), a plain-language, end-to-end walk-through.
-
-> ## READ THIS FIRST
-> **The synthetic data is ONLY for testing that your code runs.** It exists so
-> your script executes end to end: types line up, joins resolve, every category
-> and edge case appears, nothing throws an error. **Do not analyse it.** Do not
-> run statistics or regressions on it, do not fit or train models on it, and do
-> not report any number from it. The numbers are deliberately meaningless; only
-> their structure is real. Every result you report must come from running your
-> finished, unchanged code on the real data, on-premises.
+## Install (at home)
 
 ```
-   INSIDE (real data)            OUTSIDE (no real data)          INSIDE (control)
-   ..................            ......................          ................
-   01 profile        --->        02 synthesize        ..>        03 compare
-   real  -->  profile            profile  -->  synthetic         real vs synthetic
-   (the ONLY artefact            (never reads the real           structural fidelity
-    that leaves)                  data)                           + referential integrity
-```
-
-Only two things ever cross the boundary, each after the data owner authorises
-it: the **profile** (going out) and, at the very end, your **aggregate results**
-(coming back). The microdata stays put.
-
-## Provenance
-
-The disclosure-control concept this tool implements (develop your analysis on
-disclosure-safe synthetic data, then run the final code on the real data in
-place) was first applied in research at the Israel Prison Service research unit,
-in a study of terrorist recidivism following the 2011 Shalit prisoner exchange,
-under Research Committee authorization. This package is a later, general, open
-implementation of that concept; the package itself was not used in that research.
-OIS offers deployment, validation, and training services to government research
-units and academic researchers around the open core.
-
-## Why
-
-Secure research environments forbid `pip`/`conda` and have no internet. This
-package installs by copying one directory, runs on the standard library alone,
-and is small enough for a data owner to read and audit in full. The synthetic
-data is built for **code-path coverage**: every branch, filter, join and edge
-case your analysis will hit on the real data, not statistical realism. Synthetic
-numbers are never reported.
-
-A higher-fidelity, joint-distribution synthesizer (sequential CART, in the
-`synthpop` tradition) reproduces conditional relationships but must read the real
-microdata, so it can only run on-premises. This profile pipeline takes the
-opposite trade: lower joint fidelity in exchange for a stronger, simpler
-boundary, because the component that leaves the environment never touched a real
-record.
-
-## Install
-
-```bash
 pip install oissyntheticdata
 ```
 
-Or, for a locked environment with no internet: copy the four files in
-[`scripts/`](scripts/) onto the machine and run them directly. No install, no
-dependencies. Python 3.7+.
+This gives the module `gov_one`, the same module under the name `oissyntheticdata`, and the commands
+`oissyntheticdata`, `oissd` and `gov_one` (all three are `python gov_one.py`).
 
-## The four stages
+On the premises nothing is installed. Copy the two files you need out of the installation:
 
-| Stage | Where | Reads real data? | Output |
-|---|---|---|---|
-| `00 add-month` | anywhere | no | `<file>_with_month.csv` (derives `<date>_month`) |
-| `01 profile` | **inside** | yes | `profile_<base>.json`, `profile_summary.md` |
-| `02 synthesize` | **outside** | **no** | `synthetic_<base>.csv` |
-| `03 compare` | **inside only** | yes | `comparison_report.md`, `comparison_<base>.csv` |
-
-`03 compare` is an inside-the-premises **control**, not a researcher step: it
-reads the real data to confirm the synthetic bed is faithful enough, and only
-column-level scores leave. It is never run off-site.
-
-## Command line
-
-```bash
-# INSIDE: write a disclosure-safe profile of the real data (one or many files)
-oissyntheticdata profile inmates.csv incidents.csv judgements.csv
-
-# OUTSIDE: rebuild synthetic data from the profile only (acts on the newest run)
-oissyntheticdata synthesize
-
-# INSIDE-ONLY control: structural fidelity + cross-file referential integrity
-oissyntheticdata compare
+```
+oissyntheticdata export my_usb_folder
 ```
 
-Stage 01 creates `output/run_NNN_YYYY-MM-DD/`; stages 02 and 03 act on the
-newest run folder by default (or pass an explicit one). `oissd` is a short
-alias, and `python -m oissyntheticdata ...` works too.
+It writes `gov_one.py` and `analysis_template.py` there. Carry those in.
 
-## Python API
+**Version 3 is a different tool from 2.x.** The four-stage commands of 2.2.0 (`add-month`, `profile`,
+`synthesize`, `compare`) and its `profile()` / `synthesize()` / `compare()` functions are gone, and
+profiles written by 2.x are not read. To keep them: `pip install "oissyntheticdata<3"`.
 
-```python
-import oissyntheticdata as oisd
+## The flow
 
-# INSIDE
-run_dir, reports = oisd.profile(["inmates.csv", "incidents.csv"], base_dir="work")
+### 1. On the premises: profile the folder
 
-# OUTSIDE (profile only)
-oisd.synthesize(run_dir=run_dir)
+Copy `gov_one.py` into the folder with the Excel / CSV files and run:
 
-# INSIDE-ONLY control
-run_dir, fidelity, integrity = oisd.compare(run_dir=run_dir, base_dir="work")
+```
+python gov_one.py
 ```
 
-## What the profile keeps (and hides)
+It reads every `.xlsx` / `.xlsm` / `.csv` file (every sheet), finds how the tables link to each other, and
+writes a `to_send` folder: one `profile_<table>.json` per table, `schema.json` (the links) and
+`profile_summary.md`.
 
-The profile is the whole privacy posture. Per column it keeps a *shape*, never
-identifiable values:
+**Read `profile_summary.md` before anything is sent.** It lists, column by column, what leaves.
 
-- **Unique integer key:** only "this is a unique key" plus a length range.
-- **Fan-out / foreign key** (e.g. `prisoner_id`): only the *distribution* of
-  group sizes; never an id tied to its count.
-- **Numeric:** mean, standard deviation, and a quantile grid, with **robust
-  bounds** (P1/P99 stand in for the true min/max so extremes do not leak).
-- **Categorical:** level frequencies, but any level with fewer than `k` records
-  (default `k = 5`) is relabelled `RARE_###`, count kept, label dropped.
-- **High-cardinality text / id:** only a format signature (e.g. `DD-DDDDDD`) and
-  a length range. Values are never enumerated.
-- **Dates:** format, range, per-year and per-month shape (for seasonality).
+To look first without writing anything: `python gov_one.py check`
 
-Across files, columns that are key-like in two or more profiles become shared
-relational keys, so the synthetic children join correctly onto the synthetic
-parent.
+### 2. The office e-mails you the `to_send` folder
 
-## Relational example
+### 3. At home: build synthetic files and write your script
 
-```bash
-oissyntheticdata profile inmates.csv incidents.csv judgements.csv
-oissyntheticdata synthesize
-oissyntheticdata compare
+Put `gov_one.py` next to the `to_send` folder and run the same command (or run `oissyntheticdata` there):
+
+```
+python gov_one.py
 ```
 
-`inmates` is the parent (`prisoner_id` unique); `incidents` and `judgements`
-are children sharing `prisoner_id` and `incident_id`. The synthesizer mints one
-shared key pool per shared key, so synthetic child keys are a subset of the
-synthetic parent keys. `compare` reports referential integrity (orphan keys, if
-any) alongside per-column fidelity.
+It finds only JSON, so it writes `synthetic\synthetic_<file>.xlsx / .csv`: same file names, sheets, headers,
+row counts, links between tables, and similar distributions. Every value is invented.
 
-## Rebuilding joined or merged files
+Copy `analysis_template.py`, write your statistics in part 4, and run it on the folder:
 
-Stage 01 detects the relationships between your files from the data itself. A
-shared column is treated as a link only when one file holds it uniquely (the
-parent) and another file's values are a repeating subset of it (the child); this
-is type-agnostic, so integer keys, string ids, and dates are all found, and a
-column that merely shares a name but is a plain attribute is ignored. The
-detected schema is printed and written to `schema.json` (names and fan-out
-quantiles only, so it is disclosure-safe). If detection ever picks the wrong
-parent on an unusual schema, you can override it.
+```
+python analysis_template.py .
+```
 
-Stage 02 then synthesizes in parent-before-child order and attaches each child
-row to a real synthetic parent, copying the link column and any inherited
-columns from that parent. This gives three things at once:
+It writes `results\report.html` (one offline page, stamped "Synthetic test data — not findings").
 
-- Referential integrity: every synthetic child key resolves to a synthetic
-  parent, so a group-by or a single-key join runs with zero orphan keys, and you
-  can rebuild a merged or aggregated table from the synthetic files exactly as
-  you would from the real ones.
-- Realistic fan-out: the number of children per parent follows the real
-  group-size distribution.
-- Within-row key pairing: when a child carries a second key that the real data
-  shows is fixed by its parent (for example a judgement's `prisoner_id` is fixed
-  once its `incident_id` is known), that key is inherited from the matched
-  parent, so the pairing is exact. A judgement's incident now belongs to that
-  judgement's prisoner, not just to some valid prisoner.
+Write `import gov_one as g` in your script, not `import oissyntheticdata`: that line works in both places.
 
-This supports both the hierarchical model (files describing facets of one object,
-merged at synthesis time) and the simple shared-id model (several files that the
-research unit merges by grouping on a common id to check their interpretation).
+### 4. Back on the premises: run the same script on the real files
 
-## Confidentiality model
+Bring `gov_one.py` and your script, put them in the folder with the real files, and run the script.
+Real files win over synthetic ones automatically; the report loses the synthetic stamp.
 
-- **`k` (min cell count, default 5):** no categorical level, fan-out estimate,
-  or surrogate key is reported from fewer than `k` real records, so nothing in
-  the profile is traceable to one person.
-- **Robust bounds:** numeric extremes are reported at P1/P99, not the true
-  min/max, so a single outlier cannot leak through the range.
-- **Identifiers are never enumerated:** only a format signature and length range
-  leave; the synthesizer mints fresh keys.
-- **Only the profile leaves; the real data never does.** Develop on the synthetic
-  copy off-site, run final code on the real data in place, release only vetted
-  aggregates.
+## What leaves the premises, and what does not
 
-`oissyntheticdata` is a disclosure-control aid, not a formal privacy guarantee. For a
-mathematical guarantee, combine it with differential privacy or apply output
-checking (statistical disclosure control) to anything released.
+| In the data | In the JSON |
+|---|---|
+| Id numbers, names, phones, addresses, e-mail, free text (by header) | shape only: length and letters / digits |
+| Key columns (case number, client number) | counts only: how many, how many rows per key |
+| Categories (district, status, type) | labels + counts; a label seen fewer than 5 times loses its name |
+| Numbers | 9 rounded quantiles, mean, spread |
+| Dates | counts per month and per day of the week; never the day itself |
+| Two columns together | joint counts for pairs that pass a significance test; a cell below 5 is dropped, and one more cell is dropped when the hidden remainder could be found by subtraction |
+| Two dates (opened → closed; a date in a linked table) | rounded quantiles of the days between them |
+| Linked tables | how many rows per key, and what share of the parent rows have any |
+| Rules | "column A is empty when column B is X"; "age = years between two dates" |
+| A table with fewer than 20 rows | shape only |
 
-## How the standalone scripts are built
+No row is copied. The minimum count is 5; change it with `--k 10`.
 
-`scripts/00` to `scripts/03` are **auto-generated** from `src/oissyntheticdata/`
-by `tools/build_standalone.py`, inlining the shared `_common` and `_io` modules
-so each script is a single self-contained file. The package and the standalone
-scripts therefore produce identical output; `tests/test_roundtrip.py` enforces
-that they stay in sync.
+A column that is **labels + counts** sends its values as written. If such a column holds names of people
+under a header the tool did not recognise, hide it (next section). This is the one thing to check by eye.
+The summary marks columns whose labels look like names of people, but that mark is a guess, not a guarantee.
 
-## Government use of synthetic data
+## Settings (optional)
 
-The develop-on-synthetic, run-on-real workflow is established practice at
-national statistical agencies:
+`python gov_one.py settings` writes `gov_one_settings.json` next to the data. Edit it and profile again.
 
-- U.S. Census Bureau, SIPP Synthetic Beta (SSB): researchers develop code on
-  synthetic linked survey and administrative data, and Census staff run the
-  validated code on the confidential data and release only vetted output.
-  <https://census.gov/programs-surveys/sipp/guidance/sipp-synthetic-beta-data-product.html>
-- U.S. Census Bureau, OnTheMap and LEHD LODES: the first production deployment of
-  formal privacy (2008), built on partially synthetic origin-destination data.
-  <https://lehd.ces.census.gov/>
-- U.S. Census Bureau, "What Are Synthetic Data?" (2021 factsheet), covering the
-  Longitudinal Business Database, SIPP, OnTheMap, and 2020 Decennial Census uses.
-  <https://www.census.gov/content/dam/Census/library/factsheets/2021/what-are-synthetic-data/what-are-synthetic-data.pdf>
+| Key | Use |
+|---|---|
+| `hide` | headers to describe by shape only |
+| `show` | headers the tool hid that are safe to summarise |
+| `public_tables` | small lookup tables (e.g. list of districts) to copy as they are |
+| `links` | a link the tool missed: `"payments::client = clients::client_id"` |
+| `no_links` | a link the tool found that is not one |
+| `skip_files` | files to leave out |
+| `min_cell` | the minimum count |
 
-## Governance, support and contributing
+## The toolbox for your script (`import gov_one as g`)
 
-`oissyntheticdata` is maintained in the open under the MIT license. Questions, bug
-reports, and change proposals go through public GitHub Issues and Pull Requests;
-see [`CONTRIBUTING.md`](CONTRIBUTING.md). Decisions are made by the maintainer(s)
-listed in [`CITATION.cff`](CITATION.cff) via the public issue/PR process. There
-is no private support channel; keeping development and discussion public is part
-of the project's auditability goal. Releases are versioned and recorded in
-[`CHANGELOG.md`](CHANGELOG.md).
+| Need | Call |
+|---|---|
+| Open the folder | `T = g.open_tables(folder)` → `T['name'].rows`, `.col(c)`, `.nums(c)`, `.dates(c)` |
+| Convert a cell | `g.to_num(v)`, `g.to_date(v)`, `g.month_key(v)` |
+| Group and link | `g.count_by`, `g.group_by`, `g.join(rows, parent_rows, on=...)`, `g.monthly_counts` |
+| Describe | `g.describe`, `g.quantile`, `g.crosstab` |
+| Tests | `g.chi_square`, `g.t_test` (Welch), `g.mann_whitney`, `g.proportion_test`, `g.pearson`, `g.spearman` |
+| Models | `g.ols` (classical or Newey-West errors), `g.its` (interrupted time series) |
+| Report | `rep = g.Report(title)`; `rep.h`, `rep.p`, `rep.note`, `rep.table`, `rep.line`, `rep.bars`, `rep.save` |
+| Small cells in your own output | `g.safe(n)` shows `<5` instead of a small count |
 
-## Generative AI disclosure
+Anything else you need, write in plain Python in your script. Do not import another package.
 
-A generative AI assistant (Claude, Anthropic) was used to help draft and refactor
-parts of the code and documentation. All output was reviewed, tested, and edited
-by the author(s), who take full responsibility for the design, correctness, and
-integrity of the software. Contributors are asked to disclose non-trivial AI
-assistance (see `CONTRIBUTING.md`).
+## How the synthetic files keep their shape
 
-## Maintainer
+Each column is drawn given one other column it depends on most (a tree over the columns), and, where a
+second column still tells something once the first is accounted for, given that one too. The two joint
+tables are combined so that the synthetic file agrees with both. Nothing beyond two-column counts is
+ever written to the JSON.
 
-Dr **Yohanan Ouaknine**, OIS ([ois.co.il](https://ois.co.il)),
-[yohanan.ouaknine@ois.co.il](mailto:yohanan.ouaknine@ois.co.il),
-[ORCID 0000-0002-4186-7351](https://orcid.org/0000-0002-4186-7351).
-formerly Head of the Research Branch, Israel Prison Service.
+## The demos
 
-## License
+Both demos are invented from the first row to the last. The scripts that invent the data and analyse it
+are in the source archive (`demo\`, `demo_suicide\`); the data folders are made by running them.
+A synthetic result tells you the script runs and the output looks right. It is never a finding.
 
-MIT (c) 2026 Yohanan Ouaknine and OIS. See [LICENSE](LICENSE).
-If you use this software in research, please cite it; see
-[CITATION.cff](CITATION.cff).
+### An invented welfare office
+
+`demo\make_demo_data.py` writes 3 files (4 tables) into `demo\premises`. `demo\demo_analysis.py` asks four
+questions. The same script on both sides:
+
+| Question | Synthetic | "Real" |
+|---|---|---|
+| Case type by district (two tables joined) | Cramér V 0.11, p < .001 | Cramér V 0.10, p < .001 |
+| Median days open, youth-at-risk cases | 48 | 47 |
+| Jump in monthly youth-at-risk cases at 2024-01 | +18.9 a month | +17.9 a month |
+| Extra amount for financial-aid payments | +575 | +613 |
+| Days open before vs after 2024-01, youth-at-risk only | +0.1 (not significant) | −42.9 (p < .001) |
+
+The last line is the limit to remember: an effect that exists in one sub-group only is not reproduced.
+
+### Invented suicide cases followed by a welfare unit
+
+`demo_suicide\make_suicide_data.py` invents 4,195 cases for 2014-2023, their welfare contacts and earlier
+attempts (3 files, 4 tables). Only the proportions follow the Ministry of Health report "Suicidality in
+Israel, suicides 2000-2023", which is built on the CBS cause-of-death files (ICD-10 X60-X84, Y87.0):
+cases per year and sex, age, population group, marital status, method, month.
+`demo_suicide\suicide_analysis.py` asks eight questions.
+
+| Question | Synthetic | Invented "real" |
+|---|---|---|
+| Cases in 2014 / 2018 / 2023 | 402 / 458 / 424 | 390 / 457 / 433 |
+| Method by sex | Cramér V 0.23 | Cramér V 0.25 |
+| Friday and Saturday share of cases | 25.9% | 24.6% |
+| Known to welfare, age 15-24 / 75+ | 25.3% / 51.5% | 24.6% / 46.0% |
+| Earlier attempt, men / women | 11.7% / 29.1% | 12.7% / 25.1% |
+| Median days from last contact to death, high / low risk | 77 / 160 | 54 / 177 |
+| Contacts or attempts dated after the death | 0 | 0 |
+| Arab cases under 45 | 65.0% | 73.1% |
+| Known to welfare: divorced minus others | +7.0 points (p < .001) | +8.6 points (p < .001) |
+
+The last two lines are what the second column buys: when each column followed one other column only, they
+were 51.6% and +1.9 points (not significant).
+
+## Limits
+
+- An effect that exists in one sub-group only (a three-way pattern) is not reproduced. See the welfare demo.
+- A column follows two other columns at most, and the second is added only when a test finds it. A weak
+  pattern spread over many values can be missed.
+- Synthetic distributions are close, not equal: see the tables above for how far they sit from the "real" side.
+- Links between tables are found by matching values. Check the list in `profile_summary.md`; fix it with `links` / `no_links`.
+- Hiding personal columns relies on the header. A names column under an unusual header must be added to `hide`.
+- The header must be one row. Titles above it are skipped; merged or two-level headers and total rows are not handled.
+- `.xls` and `.xlsb` are not read: save them as `.xlsx` first.
+- The synthetic `.xlsx` files were read back by the tool itself; they were not opened in Excel during testing.
+- Not yet run on real ministry files, and only on Python 3.15.

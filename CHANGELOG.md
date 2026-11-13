@@ -1,80 +1,42 @@
 # Changelog
 
-All notable changes to this project are documented here. The format is based on
-[Keep a Changelog](https://keepachangelog.com/), and this project adheres to
-[Semantic Versioning](https://semver.org/).
+## [3.0.0] - 2026-11-12
 
-## [2.2.0] - 2026-06-11
+A different tool under the same name. **Not compatible with 2.x.**
 
-Major release: relational synthesis with auto-detected schema and within-row key pairing.
+### Changed
+- The package is now the single file `gov_one.py`: profile a whole folder of Excel / CSV files
+  (every sheet), write aggregate-only JSON, rebuild synthetic files from the JSON, and give your own
+  analysis script a statistics toolbox. Standard library only, as before.
+- `import gov_one as g` (or `import oissyntheticdata as g`) replaces the 2.x functions.
+- Commands: `oissyntheticdata [auto|profile|synth|check|settings]`, also available as `oissd`
+  and `gov_one`.
+
+### Removed
+- The 2.x commands `add-month`, `profile` (old form), `synthesize`, `compare`, the functions
+  `profile()`, `synthesize()`, `compare()`, `add_month_file()`, and the standalone `scripts/`.
+  Profiles written by 2.x are not read. To keep 2.x: `pip install "oissyntheticdata<3"`.
 
 ### Added
-- Automatic relationship detection (stage 01) by value-inclusion: a shared column
-  is treated as a link only when one file holds it uniquely (parent) and another
-  file's values are a repeating subset (child). Type-agnostic, so integer, string,
-  and date keys are all found, and shared attribute columns are correctly ignored.
-- Relational synthesis (stage 02): each child row is attached to a real synthetic
-  parent row; the link column and any inherited columns are copied from that parent.
-  This gives referential integrity, realistic fan-out, and exact within-row key
-  pairing at once (for example, a judgement's incident now belongs to that
-  judgement's prisoner). Supports both the hierarchical ("deterrence") model and the
-  simple shared-id ("merge by grouping") model.
-- Detected schema is written to schema.json (names and fan-out quantiles only,
-  disclosure-safe) and printed in stage 01.
-- Stage 03 reports schema-driven referential integrity and within-row pairing,
-  including links that are not id-named.
+- Links between tables found from the values, with rows per key and the share of parent rows
+  that have any child row.
+- Disclosure rules beyond rare-label suppression: complementary suppression in joint tables,
+  dates by month and weekday only, quantiles rounded to four significant figures, id-number
+  look-alikes and personal headers (English and Hebrew) described by shape only, a
+  `profile_summary.md` listing what leaves.
+- Structure carried in the JSON: joint counts for pairs of columns chosen by a tree, a second
+  "given" column per column where a test finds one, durations between dates (within a table and
+  across linked tables), "empty when" rules, ages recomputed from two dates.
+- Statistics toolbox in pure Python: describe, crosstab, chi-square, Welch t, Mann-Whitney,
+  proportion test, Pearson, Spearman, OLS (classical or Newey-West), interrupted time series,
+  and an offline HTML report stamped "Synthetic test data — not findings" on synthetic files.
+- `oissyntheticdata export [FOLDER]` copies `gov_one.py` and `analysis_template.py` out of the
+  installation, to carry into premises where nothing can be installed.
 
-### Changed
-- Single-file and no-relationship runs are unchanged (same output as before).
+### Tested
+- On two invented folders only (a welfare office; suicide cases with welfare contacts), Python 3.15,
+  Windows. Not yet on real ministry files.
 
-## [2.1.0] - 2026-06-11
+## 2.2.0 and earlier
 
-Documentation and metadata corrections. No change to the synthesis or profiling
-logic; the only output change is cosmetic (report text uses hyphens, not em-dashes).
-
-### Changed
-- Provenance clarified: the disclosure-control concept, not this package, was
-  first applied in research at the Israel Prison Service research unit; this
-  package is a later, general, open implementation of that concept.
-- Maintainer affiliation corrected; removed the Ashkelon Academic College affiliation.
-- Lineage and sources restricted to government uses of synthetic data (U.S. Census
-  SIPP Synthetic Beta, OnTheMap / LEHD) with live links; academic references kept
-  only where a resolving link exists, each now carrying a DOI/URL.
-- Removed em-dashes throughout the documentation and report output.
-
-## [2.0.0] - 2026-06-11
-
-This is a **method change**, not a backward-compatible revision. 2.0.0 replaces
-the sequential-CART synthesiser of 1.0.0 with the **profile-based pipeline**, in
-which the synthesiser never reads the real microdata.
-
-### Added
-- Four-stage pipeline: `add-month` (00), `profile` (01), `synthesize` (02),
-  `compare` (03), available as a CLI (`oissyntheticdata <stage>` / `oissd`), as
-  an importable API (`oissyntheticdata.profile/synthesize/compare`), and as
-  self-contained zero-install scripts in `scripts/`.
-- Disclosure-controlled profile (stage 01): robust numeric bounds (P1/P99),
-  k-suppression of rare categorical levels (default k=5), identifier format
-  signatures, and group-size distributions for fan-out keys.
-- Synthesis from the profile only (stage 02), including seasonal dates, forced
-  appearance of every category (incl. rare), and shared relational key pools so
-  cross-file joins line up.
-- Inside-only fidelity control (stage 03): `kappa*`, `1 - KS`, signature
-  agreement, group-size agreement, and cross-file referential integrity.
-- `tools/build_standalone.py` regenerates the standalone scripts from the
-  package, keeping a single source of truth; `tests/test_roundtrip.py` enforces
-  package == standalone-script equivalence.
-
-### Changed
-- Synthesiser no longer reads the confidential microdata. The only artefact that
-  leaves the secure environment is the disclosure-controlled profile.
-- Paper, citation metadata and documentation rewritten to describe the
-  profile-based method.
-
-### Notes
-- Zero third-party runtime dependencies (standard library only), unchanged.
-- New release is a new version under the existing Zenodo concept record.
-
-## [1.0.0] - 2026-06-10
-- Initial release: zero-dependency sequential CART synthesis (synthpop
-  tradition) with relational support.
+See the 2.2.0 release on PyPI for the history of the earlier, four-stage tool.

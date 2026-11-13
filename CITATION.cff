@@ -8,9 +8,9 @@ authors:
     orcid: "https://orcid.org/0000-0002-4186-7351"
     email: "yohanan.ouaknine@ois.co.il"
     affiliation: "OIS (https://ois.co.il); formerly Head of the Research Branch, Israel Prison Service"
-version: "2.2.0"
+version: "3.0.0"
 doi: "10.5281/zenodo.20632932"
-date-released: "2026-06-11"
+date-released: "2026-11-12"
 license: MIT
 repository-code: "https://github.com/yohananouaknine/oissyntheticdata"
 url: "https://ois.co.il"
@@ -23,18 +23,19 @@ keywords:
   - k-anonymity
   - referential integrity
 abstract: >-
-  oissyntheticdata is a zero-dependency, pure-Python tool that generates
-  structurally faithful synthetic data for secure research environments without
-  the synthesizer ever reading the confidential microdata. An on-premises stage
-  emits a disclosure-controlled profile of the real data (robust numeric bounds,
-  k-suppressed categorical levels, format signatures for identifiers, and the
-  distribution of group sizes for fan-out keys); an off-premises stage rebuilds
-  a synthetic dataset from that profile alone, preserving column types, ranges,
-  category levels, missingness, ID formats and cross-file referential integrity;
-  and an inside-only control stage scores structural fidelity. The synthetic
-  data is built for code-path coverage so analysts can develop and debug
-  off-site, then run the final analysis on the real data on-premises. Maintained
-  by OIS.
+  oissyntheticdata is a zero-dependency, pure-Python tool, the single file
+  gov_one.py, for offices whose confidential data is a folder of Excel and CSV
+  files. On the premises it profiles the folder into aggregate-only JSON files:
+  counts, shares and rounded quantiles, with no count below a minimum (5 by
+  default), dates by month and weekday only, and identifiers described by shape
+  only. Off the premises the same file rebuilds synthetic files from the JSON
+  alone, with the same file names, sheets, headers, row counts and links
+  between tables, and similar distributions; it never reads the confidential
+  rows. An analyst writes a statistics script on the synthetic files with the
+  built-in toolbox, and the same script is then run unchanged on the real files
+  on the premises. Results from synthetic files test the script; they are not
+  findings. Version 3 replaces the four-stage tool of versions 2.x and is not
+  compatible with it. Maintained by OIS.
 references:
   - type: data
     title: "SIPP Synthetic Beta (SSB)"

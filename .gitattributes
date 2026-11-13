@@ -1,0 +1,3 @@
+# Keep every file exactly as written: gov_one.py must be the same bytes as the file on PyPI
+# and the file carried into the premises.
+* -text

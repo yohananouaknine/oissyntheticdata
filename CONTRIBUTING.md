@@ -4,28 +4,28 @@ Thanks for your interest in `oissyntheticdata`.
 
 ## Ground rules
 
-- **Zero runtime dependencies.** The package must run on the Python standard
-  library alone (Python >= 3.7). Do not add third-party runtime imports.
-- **The boundary is sacred.** Stage 02 (`synthesize`) must never read the real
-  data - only the profile. Stage 03 (`compare`) reads real data and is an
-  inside-only control; keep it out of any "researcher" code path.
-- **Single source of truth.** Edit the package in `src/oissyntheticdata/`. Never
-  hand-edit `scripts/0*.py` - regenerate them:
-  ```bash
-  python tools/build_standalone.py
-  ```
+- **No runtime dependency.** `gov_one.py` runs on the Python standard library alone
+  (Python >= 3.8). Do not import another package: the file is carried into places
+  where nothing can be installed.
+- **Only aggregates leave.** Nothing that describes fewer than the minimum count of
+  rows (5 by default) may reach the JSON, and no row is copied. The synthetic files
+  are built from the JSON alone.
+- **One source.** The tool is the single file `gov_one.py`. The `oissyntheticdata`
+  package is a thin wrapper around it, and the version is read from the `VERSION`
+  line of `gov_one.py`.
+- **The R version writes the same JSON.** A change to what the profile contains has
+  to be made in <https://github.com/yohananouaknine/oissyntheticdata-r> too.
 
 ## Development
 
 ```bash
-pip install -e ".[test]"
-pytest -q                       # runs the round-trip equivalence test
-python tools/build_standalone.py
+python -m unittest discover -s tests
 ```
 
-The round-trip test profiles a tiny generated dataset, synthesises it, compares,
-and asserts that the standalone scripts and the package produce identical output.
-If you change any stage, run the bundler and the tests before opening a PR.
+The test builds a small invented folder, profiles it, rebuilds synthetic files and
+checks that an identifier and a rare label do not leave. The two demos
+(`demo/`, `demo_suicide/`) are the longer checks: run the script that invents the
+data, then `python gov_one.py` on both sides, then the analysis script.
 
 ## Reporting issues
 

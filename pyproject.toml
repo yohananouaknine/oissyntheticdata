@@ -1,25 +1,25 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
 
 [project]
 name = "oissyntheticdata"
-version = "2.2.0"
-description = "Profile-based synthetic data for secure research: a disclosure-safe profile crosses the boundary, the synthesizer never sees the real data. Zero dependencies. An OIS tool."
+dynamic = ["version"]                 # read from VERSION in gov_one.py, the single source
+description = "Profile a folder of Excel / CSV files into aggregate-only JSON, rebuild synthetic files from the JSON, and run your own statistics script on both. One file, standard library only, offline. An OIS tool."
 readme = "README.md"
-requires-python = ">=3.7"
-license = { file = "LICENSE" }
+requires-python = ">=3.8"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Yohanan Ouaknine", email = "yohanan.ouaknine@ois.co.il" }]
 maintainers = [{ name = "OIS", email = "yohanan.ouaknine@ois.co.il" }]
 keywords = [
     "synthetic data", "statistical disclosure control", "privacy",
-    "secure research", "microdata", "anonymization", "data profiling",
-    "referential integrity", "k-anonymity",
+    "secure research", "microdata", "data profiling", "excel",
+    "referential integrity", "government data",
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Information Analysis",
@@ -37,12 +37,34 @@ Issues = "https://github.com/yohananouaknine/oissyntheticdata/issues"
 [project.scripts]
 oissyntheticdata = "oissyntheticdata.cli:main"
 oissd = "oissyntheticdata.cli:main"
+gov_one = "gov_one:main"
 
-[project.optional-dependencies]
-test = ["pytest>=7.0"]
+[tool.hatch.version]
+path = "gov_one.py"
+pattern = "VERSION = 'gov_one (?P<version>[0-9][^ ']*) "
 
-[tool.setuptools]
-package-dir = { "" = "src" }
+# The wheel holds the single file gov_one.py as a top-level module (so `import gov_one as g`
+# works at home exactly as it does on the premises), plus the small oissyntheticdata package.
+[tool.hatch.build.targets.wheel]
+packages = ["oissyntheticdata"]
+core-metadata-version = "2.4"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.targets.wheel.force-include]
+"gov_one.py" = "gov_one.py"
+"analysis_template.py" = "oissyntheticdata/analysis_template.py"
+
+# The source archive: code, documents, tests and the scripts that invent the demo data.
+# The invented data folders themselves are not shipped.
+[tool.hatch.build.targets.sdist]
+core-metadata-version = "2.4"
+include = [
+    "/gov_one.py",
+    "/analysis_template.py",
+    "/oissyntheticdata/*.py",
+    "/tests/*.py",
+    "/demo/*.py",
+    "/demo_suicide/*.py",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/LICENSE",
+]

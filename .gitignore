@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+/dist/
+/build/
+*.egg-info/
+
+# Invented demo data and results: made by running the scripts in demo/ and demo_suicide/.
+/demo/premises/
+/demo/home/
+/demo_suicide/premises/
+/demo_suicide/home/
