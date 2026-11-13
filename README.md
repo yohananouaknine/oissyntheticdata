@@ -175,6 +175,12 @@ cases per year and sex, age, population group, marital status, method, month.
 The last two lines are what the second column buys: when each column followed one other column only, they
 were 51.6% and +1.9 points (not significant).
 
+## The same tool in R
+
+`gov_one.R` is the R twin, in base R only. It writes the same JSON files: a profile made with R can be
+turned into synthetic files with Python, and the other way round. It is the R package `oissyntheticdata`,
+at <https://github.com/yohananouaknine/oissyntheticdata-r>.
+
 ## Limits
 
 - An effect that exists in one sub-group only (a three-way pattern) is not reproduced. See the welfare demo.
